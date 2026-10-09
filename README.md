@@ -74,3 +74,14 @@ The command returns exit code 0 only when it produces a candidate eligible for s
 - Tool IDs: `math.evaluate`, `math.solve_linear_system`, `engineering.convert_units`, `github.fetch_file`, `sandbox.execute_python`, `engineering.solver.submit`
 - Local math tools are executable immediately; GitHub is read-only; sandbox and solver gateways remain `NOT_CONFIGURED` unless explicitly bound.
 - Unit tests: `PYTHONPATH=src python -m unittest discover -s tests -v`
+
+
+## Universal VX Tool Control Gate
+
+Every specialist agent should receive a role/version-bound `BoundEngineeringToolDispatcher`, never the low-level `EngineeringToolHub`. The dispatcher evaluates tool allowlists, family/scope, capabilities, explicit approval, input limits, bounded call/input/time budgets and the emergency stop before calling an adapter. Each invocation returns a `control_decision` and a hash-chained in-process receipt.
+
+- Gate implementation: `src/vx_agents_fabric/tool_control.py`
+- Integrated dispatch boundary: `src/vx_agents_fabric/engineering_tools.py`
+- Tests: `tests/test_engineering_tools.py`
+
+**Status boundary:** local gate enforcement is implemented and unit-tested on the feature branch; receipts are still process-local, canonical policy binding and durable VAIXLNS Event/Ledger integration are not yet admitted. This is not a production security claim. The handler adapters still need their own timeouts/cancellation; the dispatcher cannot stop a handler already running.
