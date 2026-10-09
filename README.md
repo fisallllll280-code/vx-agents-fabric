@@ -85,5 +85,8 @@ The command returns exit code 0 only when it produces a candidate eligible for s
 - [Office/skill/media routing registry](config/office_skill_routing.v1.json)
 - [Claude Code Higgsfield MCP example](config/higgsfield_mcp.example.json)
 - [Credential-free WhatsApp Cloud API example](config/whatsapp_cloud_api.example.json)
+- [Signed runtime preflight and evidence gates](docs/integration/PROMPT_OFFICE_RUNTIME_PREFLIGHT_V1.md)
+- Runtime preflight: `PYTHONPATH=src python -m vx_agents_fabric.integration_preflight --config config/office_skill_routing.v1.json --attestation-dir runtime/integration-attestations`
+- Runtime connection claims require fresh HMAC-signed host-probe receipts; this command performs no external requests, sends no WhatsApp messages and does not generate paid media.
 
 These are versioned integration specifications and examples. WhatsApp is specified through the official Meta Cloud API but remains NOT_CONFIGURED until business assets, protected credentials, verified HTTPS webhooks and inbound/outbound acceptance tests are proven. A routing declaration does not prove a provider or skill is live-connected. Paid image/video generation requires actual tool discovery, price visibility, an explicit cost ceiling and user approval. Superpowers is a host skill workflow; Higgsfield exposes an official remote MCP endpoint. Live connection status remains evidence-gated.
