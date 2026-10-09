@@ -19,6 +19,7 @@ PIPELINE: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("RESEARCH", ("VX-RES-SOURCE", "VX-RES-LITERATURE", "VX-RES-REPO", "VX-RES-REPRO", "VX-RES-CONTRA", "VX-RES-SYNTH")),
     ("FINANCIAL_FEASIBILITY", ("VX-FIN-COORD", "VX-FIN-MARKET", "VX-FIN-UNIT", "VX-FIN-COST", "VX-FIN-PRICE", "VX-FIN-RISK", "VX-FIN-COMP", "VX-FIN-PORT")),
     ("ARCHITECTURE", ("VX-ENG-REQ", "VX-ENG-ARCH")),
+    ("SYSTEM_LANGUAGE_ENGINEERING", ("VX-ENG-LANG",)),
     ("INNOVATION", ("VX-ENG-INNOV",)),
     ("BUILD_PLAN_AND_IMPLEMENTATION", ("VX-ENG-BUILD",)),
     ("VALIDATION", ("VX-ENG-TEST", "VX-ENG-RED", "VX-ENG-PROOF")),
@@ -69,6 +70,12 @@ class EngineeringDecisionEngine:
         elif any(review.status in {"FAIL", "REJECT"} or review.hard_gate_failures for review in mind_reviews):
             rationale.append("parent_mind_reported_failure_or_hard_gate_violation")
             status = "REJECT"
+        elif any(
+            result.agent_id == "VX-ENG-LANG" and result.status not in {"PARSE_PASS", "DECLARED_ONLY"}
+            for result in results
+        ):
+            rationale.append("requested_system_language_gate_not_passed")
+            status = "HOLD"
         elif missing_adapters:
             rationale.append("live_adapters_missing:" + ",".join(sorted(set(missing_adapters))))
             status = "HOLD"
@@ -130,6 +137,13 @@ class EngineeringOrchestrator:
         self.ledger.append(workflow_id, "WORKFLOW_STARTED", workflow_id, {"goal_hash": content_hash(goal)})
 
         for stage, role_ids in PIPELINE:
+            if stage == "SYSTEM_LANGUAGE_ENGINEERING":
+                language_request = context_payload.get("system_language_request")
+                engineering_context = context_payload.get("engineering")
+                if not isinstance(language_request, Mapping) and isinstance(engineering_context, Mapping):
+                    language_request = engineering_context.get("system_language_request")
+                if not isinstance(language_request, Mapping):
+                    continue
             for role_id in role_ids:
                 spec = self.registry.resolve(role_id, self.version_pins.get(role_id))
                 task_id = f"{workflow_id}:{stage}:{spec.key}"
