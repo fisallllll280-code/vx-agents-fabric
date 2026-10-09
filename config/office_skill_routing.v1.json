@@ -544,6 +544,10 @@
         "Do not expose tokens or personal message content in logs.",
         "Separate accepted-by-API, sent, delivered, read and failed states.",
         "Start in sandbox/test-recipient mode and prove one inbound and one approved outbound test before production admission."
+      ],
+      "skills": [
+        "writing-plans",
+        "verification-before-completion"
       ]
     }
   ],
