@@ -5,6 +5,12 @@ import os
 import re
 from typing import Mapping
 from ..registry import AgentRegistry, default_registry
+from ..vlns_activation import (
+    VLNSActivationGate,
+    VLNSGateConfig,
+    VLNSGuardedAgentAdapter,
+    VLNSGuardedMindAdapter,
+)
 from .openai_compatible import OpenAICompatibleProvider
 
 
@@ -22,6 +28,8 @@ class ProviderBindings:
     mind_models: Mapping[str, str]
     unconfigured_agent_versions: tuple[str, ...]
     unconfigured_minds: tuple[str, ...]
+    vlns_activation_required: bool = False
+    vlns_gate_configured: bool = False
 
 
 def build_from_env(registry: AgentRegistry | None = None,
@@ -29,9 +37,21 @@ def build_from_env(registry: AgentRegistry | None = None,
     registry = registry or default_registry()
     env = environ if environ is not None else os.environ
     base_url = env.get("VX_OPENAI_COMPAT_BASE_URL", "").strip()
+    vlns_required = env.get("VX_VLNS_ACTIVATION_REQUIRED", "false").strip().lower() in {"1", "true", "yes"}
+    gate_config = VLNSGateConfig.from_env(env) if vlns_required else None
+    gate = VLNSActivationGate(gate_config) if gate_config is not None else None
+    gate_configured = bool(
+        gate_config
+        and gate_config.base_url
+        and len(gate_config.signing_key) >= 32
+        and gate_config.provider in gate_config.allowed_providers
+    )
     if not base_url:
-        return ProviderBindings(False, None, {}, {}, {}, {},
-            tuple(spec.key for spec in registry.all_agents()), tuple(sorted(registry.minds)))
+        return ProviderBindings(
+            False, None, {}, {}, {}, {},
+            tuple(spec.key for spec in registry.all_agents()), tuple(sorted(registry.minds)),
+            vlns_required, gate_configured,
+        )
     api_key = env.get("VX_OPENAI_COMPAT_API_KEY") or None
     try:
         timeout = float(env.get("VX_PROVIDER_TIMEOUT_SECONDS", "45"))
@@ -55,7 +75,15 @@ def build_from_env(registry: AgentRegistry | None = None,
             missing_agents.append(spec.key)
             continue
         provider = OpenAICompatibleProvider(base_url, model, api_key, timeout)
-        agents[spec.key] = provider.agent_adapter
+        adapter = provider.agent_adapter
+        if gate is not None:
+            version = (
+                env.get("VX_VLNS_MODEL_VERSION_" + _fragment(spec.key), "").strip()
+                or env.get("VX_VLNS_MODEL_VERSION", "").strip()
+                or model
+            )
+            adapter = VLNSGuardedAgentAdapter(adapter, gate, model, version)
+        agents[spec.key] = adapter
         agent_models[spec.key] = model
 
     minds: dict[str, object] = {}
@@ -67,7 +95,17 @@ def build_from_env(registry: AgentRegistry | None = None,
             missing_minds.append(mind_id)
             continue
         provider = OpenAICompatibleProvider(base_url, model, api_key, timeout)
-        minds[mind_id] = provider.mind_adapter(mind_id, mind.purpose)
+        adapter = provider.mind_adapter(mind_id, mind.purpose)
+        if gate is not None:
+            version = (
+                env.get("VX_VLNS_MODEL_VERSION_" + _fragment(mind_id), "").strip()
+                or env.get("VX_VLNS_MODEL_VERSION", "").strip()
+                or model
+            )
+            adapter = VLNSGuardedMindAdapter(adapter, gate, mind_id, model, version)
+        minds[mind_id] = adapter
         mind_models[mind_id] = model
-    return ProviderBindings(True, base_url, agents, minds, agent_models, mind_models,
-                            tuple(missing_agents), tuple(missing_minds))
+    return ProviderBindings(
+        True, base_url, agents, minds, agent_models, mind_models,
+        tuple(missing_agents), tuple(missing_minds), vlns_required, gate_configured,
+    )
