@@ -35,7 +35,8 @@ def allowed_evidence_refs(payload: Mapping[str, Any]) -> set[str]:
     def walk(node: Any) -> None:
         if isinstance(node, Mapping):
             for key, value in node.items():
-                if str(key).casefold() in ref_keys:
+                normalized = str(key).casefold()
+                if normalized in ref_keys or normalized in {"url", "uri", "source_url", "canonical_url"}:
                     _references(value, allowed)
                 else:
                     walk(value)
