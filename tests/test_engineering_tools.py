@@ -4,6 +4,7 @@ from __future__ import annotations
 import base64
 import json
 import unittest
+from datetime import datetime, timedelta, timezone
 
 from vx_agents_fabric.contracts import AgentSpec
 from vx_agents_fabric.registry import AgentRegistry, default_registry
@@ -237,6 +238,106 @@ class ToolHubPolicyTests(unittest.TestCase):
             bind_registered_agent_tool_dispatcher(
                 self.hub, registry, spec.role_id, allowed_tool_ids=("shell.unrestricted",)
             )
+
+
+    def test_sensitive_tool_approval_is_bound_to_exact_action_digest(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-BUILD", role_version="1.0.0",
+            caller_family="engineering", authority_scope="sandbox",
+            capabilities=(),
+            allowed_tool_ids=("sandbox.execute_python",),
+            explicitly_approved_tool_ids=("sandbox.execute_python",),
+        )
+
+        def verify_signature(record, context):
+            # Test verifier only. Production must validate a real signed approval from a trusted authority.
+            return record.get("signature") == "valid-test-signature" and (
+                record.get("approved_action_digest") == context.get("action_digest")
+            )
+
+        dispatcher = BoundEngineeringToolDispatcher(
+            self.hub, policy, approval_verifier=verify_signature
+        )
+        arguments = {"code": "print(1)"}
+        prepared = dispatcher.prepare_action("sandbox.execute_python", arguments)
+        approval = {
+            "status": "APPROVED",
+            "approved_action_digest": prepared["action_digest"],
+            "action_id": prepared["action_id"],
+            "tool_id": prepared["tool_id"],
+            "tool_version": prepared["tool_version"],
+            "role_id": prepared["actor"]["role_id"],
+            "role_version": prepared["actor"]["role_version"],
+            "authority_scope": prepared["scope"],
+            "policy_digest": prepared["policy_digest"],
+            "input_sha256": prepared["input_sha256"],
+            "idempotency_key": prepared["idempotency_key"],
+            "valid_until": (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat(),
+            "approver_id": "human:independent-reviewer",
+            "independent": True,
+            "signature": "valid-test-signature",
+        }
+        result = dispatcher.invoke(
+            "sandbox.execute_python", arguments, approval_record=approval
+        )
+        self.assertEqual(result.status, "NOT_CONFIGURED")
+        self.assertEqual(result.control_decision["decision"], "ALLOW")
+        self.assertEqual(result.control_decision["execution_status"], "NOT_CONFIGURED")
+        self.assertTrue(dispatcher.control_gate.verify_event_chain())
+
+    def test_sensitive_tool_approval_cannot_be_reused_for_changed_inputs(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-BUILD", role_version="1.0.0",
+            caller_family="engineering", authority_scope="sandbox",
+            capabilities=(),
+            allowed_tool_ids=("sandbox.execute_python",),
+            explicitly_approved_tool_ids=("sandbox.execute_python",),
+        )
+        dispatcher = BoundEngineeringToolDispatcher(
+            self.hub, policy,
+            approval_verifier=lambda record, context: record.get("signature") == "valid-test-signature",
+        )
+        prepared = dispatcher.prepare_action(
+            "sandbox.execute_python", {"code": "print(1)"}
+        )
+        approval = {
+            "status": "APPROVED",
+            "approved_action_digest": prepared["action_digest"],
+            "action_id": prepared["action_id"],
+            "tool_id": prepared["tool_id"],
+            "tool_version": prepared["tool_version"],
+            "role_id": prepared["actor"]["role_id"],
+            "role_version": prepared["actor"]["role_version"],
+            "authority_scope": prepared["scope"],
+            "policy_digest": prepared["policy_digest"],
+            "input_sha256": prepared["input_sha256"],
+            "idempotency_key": prepared["idempotency_key"],
+            "valid_until": (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat(),
+            "approver_id": "human:independent-reviewer",
+            "independent": True,
+            "signature": "valid-test-signature",
+        }
+        result = dispatcher.invoke(
+            "sandbox.execute_python", {"code": "print(2)"}, approval_record=approval
+        )
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertEqual(result.error_code, "explicit_approval_required")
+        self.assertEqual(result.control_decision["execution_status"], "NOT_EXECUTED")
+
+    def test_tool_id_allowlist_alone_is_not_sensitive_action_approval(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-BUILD", role_version="1.0.0",
+            caller_family="engineering", authority_scope="sandbox",
+            capabilities=(),
+            allowed_tool_ids=("sandbox.execute_python",),
+            explicitly_approved_tool_ids=("sandbox.execute_python",),
+        )
+        dispatcher = BoundEngineeringToolDispatcher(self.hub, policy)
+        result = dispatcher.invoke(
+            "sandbox.execute_python", {"code": "print(7)"}
+        )
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertEqual(result.error_code, "explicit_approval_required")
 
 
 class GitHubAdapterTests(unittest.TestCase):
