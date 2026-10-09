@@ -30,3 +30,10 @@ Requires Python 3.10+ and no runtime third-party dependencies.
     python -m unittest discover -s tests -v
 
 See docs/architecture.md for integration contracts. This repository is a coordination scaffold: model/provider connectivity, durable storage and live execution adapters must be configured and validated separately.
+
+
+## Optional model connections
+
+The opt-in OpenAI-compatible adapter can bind research, finance and engineering roles and five parent-mind reviewers. Configure VX_OPENAI_COMPAT_BASE_URL, family model variables and individual VX_MIND_MODEL_* variables. Exact role-version variables can bind multiple versions to different models. The provider factory makes no network call until an orchestrated task runs.
+
+This adapter supplies chat inference only; web search, repository credentials, a sandbox, durable VAIXLNS ledger storage and release authority must be connected separately. Model-invented evidence references are filtered out.

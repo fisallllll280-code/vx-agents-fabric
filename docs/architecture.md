@@ -58,3 +58,12 @@ No live credentials, financial-account access or production authority are embedd
 Agent contracts declare input families. Research roles receive shared and research context only; finance roles may receive shared, research and finance context; engineering roles may receive shared, research, finance and engineering context; governance-level review may inspect the assembled record. Prior artifacts are filtered by the producing agent's registered family before they enter a specialist task. Domain-specific context should be passed under explicit keys named shared, research, finance, engineering or governance; do not put secrets in shared context.
 
 The default catalog preserves several specialist contract variants at version 1.0.0 and 1.1.0. Workflows can pin role versions, while adapters may be registered at role_id@version to keep distinct implementations side by side. A role-level adapter is a fallback, not proof that the underlying model versions are distinct.
+
+
+## Optional model/provider bindings
+
+An OpenAI-compatible chat endpoint is opt-in. Configure VX_OPENAI_COMPAT_BASE_URL; family defaults can be selected with VX_RESEARCH_MODEL, VX_FINANCE_MODEL and VX_ENGINEERING_MODEL. Each parent mind must be bound explicitly, for example VX_MIND_MODEL_MIND_SYS_ARCH, VX_MIND_MODEL_MIND_RESEARCH, VX_MIND_MODEL_MIND_FINANCE, VX_MIND_MODEL_MIND_SECURITY and VX_MIND_MODEL_MIND_PROOF. API credentials are read from VX_OPENAI_COMPAT_API_KEY and must not be committed.
+
+Exact role-version overrides use variables such as VX_AGENT_MODEL_VX_ENG_TEST_1_0_0 and VX_AGENT_MODEL_VX_ENG_TEST_1_1_0. Use build_from_env() from vx_agents_fabric.providers, then inject its agent_adapters and mind_adapters into EngineeringOrchestrator. The factory makes no network call itself; provider calls occur only on dispatch.
+
+This adapter supplies chat inference, not web search, repository access or code execution. Those must be separately connected and sandboxed. Returned evidence references are accepted only when exact matches exist in the supplied context or prior artifact evidence. If sources or adapters are absent, the workflow must remain HOLD.
