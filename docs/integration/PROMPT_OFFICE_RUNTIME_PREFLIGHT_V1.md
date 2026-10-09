@@ -10,11 +10,13 @@
 
 Routing declarations tell the orchestrator which integrations are intended. They do not prove a skill is installed, a remote MCP server is reachable, an API credential is valid, a WhatsApp webhook has been verified, or a paid media job succeeded.
 
-The preflight command checks fresh, signed host-side evidence for four integrations:
+The preflight command checks fresh, signed host-side evidence for six integrations:
 - `SUPERPOWERS` — agent-host software-development skills.
 - `UI_UX_PRO_MAX` — design-system skill.
 - `HIGGSFIELD` — official remote MCP for image/video generation.
 - `WHATSAPP_BUSINESS_CLOUD_API` — official Meta business messaging API.
+- `PINTEREST_API` — optional OAuth-authorized, read-only visual-reference API route.
+- `DRIBBBLE_API` — optional OAuth-authorized, read-only visual-reference API route.
 
 It never makes an external network call, sends a message, generates media, charges credits, changes a repository, or mutates canonical data.
 
@@ -28,6 +30,8 @@ runtime/integration-attestations/
   ui_ux_pro_max.json
   higgsfield.json
   whatsapp_business_cloud_api.json
+  pinterest_api.json
+  dribbble_api.json
 ```
 
 Do not commit signed production attestations or real account metadata. Use a deployment-owned private path and restrictive filesystem permissions. Evidence files contain identifiers, timestamps, capability names and hashes only; never put tokens, app secrets, phone numbers or private message bodies in the envelope.
@@ -63,6 +67,26 @@ Official setup and billing information: https://higgsfield.ai/mcp and https://hi
 Only accepts HTTPS endpoints at `graph.facebook.com` with an explicit versioned API path. Connected status requires a business-account check and verified webhook receipt, plus outbound, inbound and delivery-status capabilities. Operational status additionally requires inbound/outbound test receipts, a delivery-status webhook receipt, a negative test proving invalid webhook signatures are rejected, and a negative test proving an outbound message without required consent is blocked.
 
 Use the official API docs: https://developers.facebook.com/docs/whatsapp/cloud-api/overview
+
+## 4.1 Pinterest API
+
+Only accepts HTTPS on `api.pinterest.com` with a v5 path. Connected status requires OAuth scope evidence and an authenticated identity probe. Operational status also requires a permitted reference sample and an attribution record. Pinterest API authorization and scope availability depend on the registered app and provider approval; this preflight does not scrape boards or fetch references itself.
+
+Official authentication and API reference:
+- https://developers.pinterest.com/docs/getting-started/set-up-authentication-and-authorization/
+- https://developers.pinterest.com/docs/api/v5/pinterst/
+
+Do not use Pinterest materials for AI/ML training or improvement without express permission. Keep source/attribution data and do not store raw media unless authorized.
+
+## 4.2 Dribbble API
+
+Only accepts HTTPS on `api.dribbble.com` with a v2 path. Connected status requires OAuth scope evidence and an authenticated identity probe. Operational status also requires a permitted reference sample and an attribution record. Confirm that your registered application and account still have the desired API access before enabling the route; public browsing and API authorization are different access paths.
+
+Official API and OAuth documentation:
+- https://developer.dribbble.com/v2/
+- https://developer.dribbble.com/v2/oauth/
+
+Use read-only public scopes for visual research. Never request upload/write scopes for discovery-only tasks. Respect creator rights; capture source links and learn abstract principles rather than copying a creator's complete work.
 
 ## 5. States
 
