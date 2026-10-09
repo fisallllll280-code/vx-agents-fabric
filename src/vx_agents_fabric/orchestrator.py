@@ -1,6 +1,7 @@
 """VX-gated orchestration for specialist agents and independent parent minds."""
 from __future__ import annotations
 from dataclasses import asdict
+import os
 from typing import Any, Callable, Mapping
 from .contracts import (
     AgentRunResult, Artifact, EngineeringDecision, MindReview, TaskEnvelope, WorkflowReport, content_hash
