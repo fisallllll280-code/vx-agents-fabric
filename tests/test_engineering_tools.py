@@ -5,8 +5,11 @@ import base64
 import json
 import unittest
 
+from vx_agents_fabric.contracts import AgentSpec
+from vx_agents_fabric.registry import AgentRegistry, default_registry
 from vx_agents_fabric.engineering_tools import (
     BoundEngineeringToolDispatcher,
+    bind_registered_agent_tool_dispatcher,
     ToolAccessPolicy,
     GitHubReadOnlyAdapter,
     build_engineering_tool_hub,
@@ -183,6 +186,57 @@ class ToolHubPolicyTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "max_tool_calls_out_of_hard_bounds"):
             BoundEngineeringToolDispatcher(self.hub, policy)
+
+
+    def test_only_admitted_registry_roles_can_receive_tool_dispatchers(self):
+        registry = default_registry()
+        with self.assertRaisesRegex(PermissionError, "agent_not_admitted_for_tool_access"):
+            bind_registered_agent_tool_dispatcher(
+                self.hub, registry, "VX-ENG-TEST", allowed_tool_ids=("math.evaluate",)
+            )
+
+    def test_admitted_registry_role_is_bound_to_vx_gate(self):
+        spec = AgentSpec(
+            role_id="VX-ENG-MATH-TEST",
+            name="Admitted math tool test role",
+            family="engineering",
+            version="1.0.0",
+            capabilities=("math_evaluation",),
+            inputs=("expression",),
+            outputs=("numeric_result",),
+            authority_scope="analysis",
+            admission_status="ADMITTED",
+        )
+        registry = AgentRegistry()
+        registry.register(spec)
+        dispatcher = bind_registered_agent_tool_dispatcher(
+            self.hub, registry, spec.role_id,
+            allowed_tool_ids=("math.evaluate",),
+        )
+        result = dispatcher.invoke("math.evaluate", {"expression": "40+2"})
+        self.assertEqual(result.status, "COMPLETED")
+        self.assertEqual(result.result["value"], 42.0)
+        self.assertEqual(result.control_decision["gate"], "VX_FEDERATION_GATE")
+        self.assertEqual(result.control_decision["actor"]["role_id"], spec.role_id)
+
+    def test_agent_factory_rejects_unregistered_tool_names(self):
+        spec = AgentSpec(
+            role_id="VX-ENG-MATH-TEST",
+            name="Admitted math tool test role",
+            family="engineering",
+            version="1.0.0",
+            capabilities=("math_evaluation",),
+            inputs=("expression",),
+            outputs=("numeric_result",),
+            authority_scope="analysis",
+            admission_status="ADMITTED",
+        )
+        registry = AgentRegistry()
+        registry.register(spec)
+        with self.assertRaisesRegex(ValueError, "unregistered_tools"):
+            bind_registered_agent_tool_dispatcher(
+                self.hub, registry, spec.role_id, allowed_tool_ids=("shell.unrestricted",)
+            )
 
 
 class GitHubAdapterTests(unittest.TestCase):
