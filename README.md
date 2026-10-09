@@ -79,9 +79,11 @@ The command returns exit code 0 only when it produces a candidate eligible for s
 
 - [Superpowers × Prompt Office integration contract](docs/integration/SUPERPOWERS_PROMPT_OFFICE_FABRIC_V1.md)
 - [UI/UX Pro Max design-intelligence integration](docs/integration/UI_UX_PRO_MAX_DESIGN_INTELLIGENCE_V1.md)
+- [WhatsApp Business Cloud API integration contract](docs/integration/WHATSAPP_BUSINESS_CLOUD_API_V1.md)
 - [Higgsfield image/video generation via official MCP](docs/integration/HIGGSFIELD_MEDIA_MCP_V1.md)
 - [Deep Engineering Prompt for Prompt Chat](docs/prompts/VAIXLNS_DEEP_ENGINEERING_PROMPT_V1.md)
 - [Office/skill/media routing registry](config/office_skill_routing.v1.json)
 - [Claude Code Higgsfield MCP example](config/higgsfield_mcp.example.json)
+- [Credential-free WhatsApp Cloud API example](config/whatsapp_cloud_api.example.json)
 
-These are versioned integration specifications and examples. A routing declaration does not prove a provider or skill is live-connected. Paid image/video generation requires actual tool discovery, price visibility, an explicit cost ceiling and user approval. Superpowers is a host skill workflow; Higgsfield exposes an official remote MCP endpoint. Live connection status remains evidence-gated.
+These are versioned integration specifications and examples. WhatsApp is specified through the official Meta Cloud API but remains NOT_CONFIGURED until business assets, protected credentials, verified HTTPS webhooks and inbound/outbound acceptance tests are proven. A routing declaration does not prove a provider or skill is live-connected. Paid image/video generation requires actual tool discovery, price visibility, an explicit cost ceiling and user approval. Superpowers is a host skill workflow; Higgsfield exposes an official remote MCP endpoint. Live connection status remains evidence-gated.
