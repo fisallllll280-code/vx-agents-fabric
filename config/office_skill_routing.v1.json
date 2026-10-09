@@ -31,102 +31,288 @@
     {
       "office_id": "Ω.RES",
       "name": "Research Office",
-      "role_ids": ["VX-RES-COORD", "VX-RES-SOURCE", "VX-RES-LITERATURE", "VX-RES-REPO", "VX-RES-REPRO", "VX-RES-CONTRA", "VX-RES-SYNTH"],
+      "role_ids": [
+        "VX-RES-COORD",
+        "VX-RES-SOURCE",
+        "VX-RES-LITERATURE",
+        "VX-RES-REPO",
+        "VX-RES-REPRO",
+        "VX-RES-CONTRA",
+        "VX-RES-SYNTH"
+      ],
       "default_scope": "research",
       "purpose": "Source discovery, repository archaeology, evidence quality, reproducibility and contradiction analysis."
     },
     {
       "office_id": "Ω.ENG",
       "name": "Deep Engineering Office",
-      "role_ids": ["VX-ENG-COORD", "VX-ENG-REQ", "VX-ENG-ARCH", "VX-ENG-INNOV", "VX-ENG-BUILD", "VX-ENG-TEST", "VX-ENG-RED", "VX-ENG-PROOF", "VX-ENG-OPS", "VX-ENG-LEARN"],
+      "role_ids": [
+        "VX-ENG-COORD",
+        "VX-ENG-REQ",
+        "VX-ENG-ARCH",
+        "VX-ENG-INNOV",
+        "VX-ENG-BUILD",
+        "VX-ENG-TEST",
+        "VX-ENG-RED",
+        "VX-ENG-PROOF",
+        "VX-ENG-OPS",
+        "VX-ENG-LEARN"
+      ],
       "default_scope": "planning",
       "purpose": "Requirements, system design, innovation, bounded implementation, testing, assurance, operations and learning."
     },
     {
       "office_id": "Ω.FIN",
       "name": "Financial Intelligence Office",
-      "role_ids": ["VX-FIN-COORD", "VX-FIN-MARKET", "VX-FIN-UNIT", "VX-FIN-COST", "VX-FIN-PRICE", "VX-FIN-RISK", "VX-FIN-COMP", "VX-FIN-PORT"],
+      "role_ids": [
+        "VX-FIN-COORD",
+        "VX-FIN-MARKET",
+        "VX-FIN-UNIT",
+        "VX-FIN-COST",
+        "VX-FIN-PRICE",
+        "VX-FIN-RISK",
+        "VX-FIN-COMP",
+        "VX-FIN-PORT"
+      ],
       "default_scope": "analysis",
       "purpose": "Market, unit economics, infrastructure costs, pricing and financial-risk proposals only; no financial execution."
     },
     {
       "office_id": "Ω.PARENT",
       "name": "Independent Parent-Mind Council",
-      "role_ids": ["MIND-SYS-ARCH", "MIND-RESEARCH", "MIND-FINANCE", "MIND-SECURITY", "MIND-PROOF"],
+      "role_ids": [
+        "MIND-SYS-ARCH",
+        "MIND-RESEARCH",
+        "MIND-FINANCE",
+        "MIND-SECURITY",
+        "MIND-PROOF"
+      ],
       "default_scope": "decision-proposal",
       "purpose": "Independent review of architecture, evidence, economics, security and proof obligations; cannot override hard gates."
+    },
+    {
+      "office_id": "Ω.DESIGN",
+      "name": "Visual Design Intelligence Office",
+      "role_ids": [
+        "VX-RES-REPO",
+        "VX-RES-SOURCE",
+        "VX-ENG-REQ",
+        "VX-ENG-ARCH",
+        "VX-ENG-INNOV",
+        "VX-ENG-TEST",
+        "MIND-SYS-ARCH",
+        "MIND-RESEARCH"
+      ],
+      "default_scope": "read-only",
+      "purpose": "Discover permitted visual references, compare user experience patterns, extract abstract and attributed design principles, and create original designs validated against product requirements, accessibility, usability and implementation constraints."
     }
   ],
   "phase_routes": [
     {
+      "phase": "VISUAL_RESEARCH",
+      "skills": [
+        "brainstorming"
+      ],
+      "role_ids": [
+        "VX-RES-REPO",
+        "VX-RES-SOURCE",
+        "VX-ENG-REQ",
+        "VX-ENG-ARCH",
+        "VX-ENG-INNOV",
+        "MIND-SYS-ARCH",
+        "MIND-RESEARCH"
+      ],
+      "tools": [
+        "Pinterest",
+        "Dribbble"
+      ],
+      "required_artifacts": [
+        "reference_manifest",
+        "source_permission_status",
+        "user_need_and_audience",
+        "abstract_pattern_matrix",
+        "original_design_directions",
+        "accessibility_and_usability_checks"
+      ],
+      "gate": "AUTHORIZED_SOURCE_ACCESS_AND_ORIGINALITY_REVIEW",
+      "write_scope": "none",
+      "constraints": [
+        "Use official APIs or human-accessible pages in ways permitted by each provider's terms.",
+        "Do not scrape either source.",
+        "Do not use Pinterest materials for AI training/fine-tuning/model improvement without express permission.",
+        "Capture source links and attribution; do not store raw reference media unless authorized.",
+        "Extract abstract design principles rather than cloning a specific creator's composition.",
+        "No design pattern becomes a reusable internal standard until human review and regression evaluation approve it."
+      ]
+    },
+    {
       "phase": "DESIGN",
-      "skills": ["brainstorming"],
-      "role_ids": ["VX-ENG-COORD", "VX-ENG-REQ", "VX-ENG-ARCH", "MIND-SYS-ARCH"],
-      "required_artifacts": ["design_brief", "alternatives", "constraints", "acceptance_criteria", "risk_register"],
+      "skills": [
+        "brainstorming"
+      ],
+      "role_ids": [
+        "VX-ENG-COORD",
+        "VX-ENG-REQ",
+        "VX-ENG-ARCH",
+        "MIND-SYS-ARCH"
+      ],
+      "required_artifacts": [
+        "design_brief",
+        "alternatives",
+        "constraints",
+        "acceptance_criteria",
+        "risk_register"
+      ],
       "gate": "DESIGN_APPROVAL_REQUIRED",
       "write_scope": "none"
     },
     {
       "phase": "ISOLATE",
-      "skills": ["using-git-worktrees"],
-      "role_ids": ["VX-ENG-COORD", "VX-ENG-OPS"],
-      "required_artifacts": ["branch_or_worktree_ref", "cleanliness_check", "baseline_test_result"],
+      "skills": [
+        "using-git-worktrees"
+      ],
+      "role_ids": [
+        "VX-ENG-COORD",
+        "VX-ENG-OPS"
+      ],
+      "required_artifacts": [
+        "branch_or_worktree_ref",
+        "cleanliness_check",
+        "baseline_test_result"
+      ],
       "gate": "ISOLATED_WORKSPACE_REQUIRED",
       "write_scope": "feature-branch-only"
     },
     {
       "phase": "PLAN",
-      "skills": ["writing-plans"],
-      "role_ids": ["VX-ENG-REQ", "VX-ENG-ARCH", "VX-ENG-BUILD", "VX-ENG-TEST"],
-      "required_artifacts": ["task_plan", "file_paths", "test_commands", "stop_conditions", "rollback_plan"],
+      "skills": [
+        "writing-plans"
+      ],
+      "role_ids": [
+        "VX-ENG-REQ",
+        "VX-ENG-ARCH",
+        "VX-ENG-BUILD",
+        "VX-ENG-TEST"
+      ],
+      "required_artifacts": [
+        "task_plan",
+        "file_paths",
+        "test_commands",
+        "stop_conditions",
+        "rollback_plan"
+      ],
       "gate": "APPROVED_PLAN_REQUIRED",
       "write_scope": "none"
     },
     {
       "phase": "IMPLEMENT",
-      "skills": ["subagent-driven-development", "executing-plans"],
-      "role_ids": ["VX-ENG-BUILD"],
-      "required_artifacts": ["patch", "changed_file_list", "implementation_notes"],
+      "skills": [
+        "subagent-driven-development",
+        "executing-plans"
+      ],
+      "role_ids": [
+        "VX-ENG-BUILD"
+      ],
+      "required_artifacts": [
+        "patch",
+        "changed_file_list",
+        "implementation_notes"
+      ],
       "gate": "SCOPED_SANDBOX_REQUIRED",
       "write_scope": "sandbox-write"
     },
     {
       "phase": "TEST",
-      "skills": ["test-driven-development"],
-      "role_ids": ["VX-ENG-TEST"],
-      "required_artifacts": ["test_commands", "exit_codes", "test_output_refs", "regression_results"],
+      "skills": [
+        "test-driven-development"
+      ],
+      "role_ids": [
+        "VX-ENG-TEST"
+      ],
+      "required_artifacts": [
+        "test_commands",
+        "exit_codes",
+        "test_output_refs",
+        "regression_results"
+      ],
       "gate": "TEST_EVIDENCE_REQUIRED",
       "write_scope": "sandbox"
     },
     {
       "phase": "DEBUG",
-      "skills": ["systematic-debugging"],
-      "role_ids": ["VX-ENG-RED", "VX-ENG-OPS", "VX-ENG-TEST"],
-      "required_artifacts": ["reproduction", "root_cause_hypotheses", "cause_evidence", "corrective_delta"],
+      "skills": [
+        "systematic-debugging"
+      ],
+      "role_ids": [
+        "VX-ENG-RED",
+        "VX-ENG-OPS",
+        "VX-ENG-TEST"
+      ],
+      "required_artifacts": [
+        "reproduction",
+        "root_cause_hypotheses",
+        "cause_evidence",
+        "corrective_delta"
+      ],
       "gate": "ROOT_CAUSE_RATIONALE_REQUIRED",
       "write_scope": "analysis"
     },
     {
       "phase": "REVIEW",
-      "skills": ["requesting-code-review", "receiving-code-review"],
-      "role_ids": ["VX-ENG-RED", "VX-ENG-PROOF", "MIND-SECURITY", "MIND-PROOF"],
-      "required_artifacts": ["spec_compliance_review", "quality_review", "security_findings", "disposition"],
+      "skills": [
+        "requesting-code-review",
+        "receiving-code-review"
+      ],
+      "role_ids": [
+        "VX-ENG-RED",
+        "VX-ENG-PROOF",
+        "MIND-SECURITY",
+        "MIND-PROOF"
+      ],
+      "required_artifacts": [
+        "spec_compliance_review",
+        "quality_review",
+        "security_findings",
+        "disposition"
+      ],
       "gate": "CRITICAL_FINDINGS_BLOCK",
       "write_scope": "read-only"
     },
     {
       "phase": "VERIFY",
-      "skills": ["verification-before-completion"],
-      "role_ids": ["VX-ENG-TEST", "VX-ENG-PROOF", "MIND-PROOF"],
-      "required_artifacts": ["fresh_test_results", "evidence_manifest", "claim_to_evidence_map", "replay_metadata"],
+      "skills": [
+        "verification-before-completion"
+      ],
+      "role_ids": [
+        "VX-ENG-TEST",
+        "VX-ENG-PROOF",
+        "MIND-PROOF"
+      ],
+      "required_artifacts": [
+        "fresh_test_results",
+        "evidence_manifest",
+        "claim_to_evidence_map",
+        "replay_metadata"
+      ],
       "gate": "INDEPENDENT_EVIDENCE_REQUIRED",
       "write_scope": "verification"
     },
     {
       "phase": "CLOSE",
-      "skills": ["finishing-a-development-branch"],
-      "role_ids": ["VX-ENG-COORD", "VX-ENG-OPS", "MIND-SYS-ARCH"],
-      "required_artifacts": ["diff_summary", "final_status", "rollback_plan", "merge_or_pr_recommendation"],
+      "skills": [
+        "finishing-a-development-branch"
+      ],
+      "role_ids": [
+        "VX-ENG-COORD",
+        "VX-ENG-OPS",
+        "MIND-SYS-ARCH"
+      ],
+      "required_artifacts": [
+        "diff_summary",
+        "final_status",
+        "rollback_plan",
+        "merge_or_pr_recommendation"
+      ],
       "gate": "NO_AUTO_MERGE",
       "write_scope": "decision-proposal"
     }
@@ -138,5 +324,55 @@
     "preserve_prompt_versions": true,
     "promote_prompt_only_after_regression_evaluation": true,
     "model_weight_retraining_claimed": false
-  }
+  },
+  "visual_reference_sources": [
+    {
+      "source_id": "PINTEREST",
+      "homepage": "https://www.pinterest.com/",
+      "official_developer_docs": "https://developer.pinterest.com/docs/overview/welcome/",
+      "access_modes": [
+        {
+          "mode": "human_open_web_reference",
+          "status": "AVAILABLE_SUBJECT_TO_SITE_TERMS"
+        },
+        {
+          "mode": "official_api_v5",
+          "status": "REQUIRES_REGISTERED_APP_APPROVAL_AND_SCOPED_OAUTH"
+        },
+        {
+          "mode": "official_mcp",
+          "status": "ANNOUNCED_PUBLIC_AVAILABILITY_NOT_CONFIRMED"
+        }
+      ],
+      "policy_constraints": [
+        "No scraping or automated extraction except where expressly permitted by Pinterest.",
+        "Do not use Pinterest Materials to train, fine-tune, or otherwise improve/develop AI or ML models without express permission.",
+        "Do not imitate Pinterest's own visual layout or user experience.",
+        "Record source URL and permission/access basis; preserve attribution."
+      ],
+      "no_assumption": "Do not assume the announced Pinterest MCP is publicly available or already connected."
+    },
+    {
+      "source_id": "DRIBBBLE",
+      "homepage": "https://dribbble.com/",
+      "official_api_docs": "https://developer.dribbble.com/v2/",
+      "access_modes": [
+        {
+          "mode": "human_open_web_reference",
+          "status": "AVAILABLE_SUBJECT_TO_SITE_TERMS"
+        },
+        {
+          "mode": "official_api_v2",
+          "status": "REQUIRES_REGISTERED_APP_OAUTH_AND_APPROVED_USE"
+        }
+      ],
+      "policy_constraints": [
+        "No scraping or unauthorized automated access.",
+        "Respect creator ownership and content rights.",
+        "Verify current API access and permitted use before building a production connector.",
+        "Retain source links and do not copy a creator's design as a finished implementation without authorization."
+      ],
+      "no_assumption": "The existence of legacy API documentation does not prove all discovery/search endpoints are currently available."
+    }
+  ]
 }
