@@ -11,6 +11,9 @@ import hashlib
 import hmac
 import json
 import os
+import sqlite3
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Callable, Mapping
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
@@ -58,7 +61,6 @@ class VLNSGateConfig:
     required: bool
     base_url: str
     activation_path: str
-    event_path: str
     token: str | None
     signing_key: bytes
     provider: str
@@ -66,6 +68,7 @@ class VLNSGateConfig:
     allowed_capabilities: frozenset[str]
     allowed_tools: frozenset[str]
     mind_capabilities: tuple[str, ...] = ("reasoning", "verification")
+    evidence_path: str = "var/vx_vlns_evidence.sqlite3"
     timeout_seconds: float = 8.0
 
     @classmethod
@@ -86,7 +89,6 @@ class VLNSGateConfig:
             required=required,
             base_url=configured_url,
             activation_path=env.get("VLNS_SERVER_ACTIVATION_PATH", "/v1/activations").strip(),
-            event_path=env.get("VLNS_SERVER_EVENT_PATH", "/events").strip(),
             token=env.get("VLNS_SERVER_TOKEN") or None,
             signing_key=raw_key.encode("utf-8"),
             provider=env.get("VX_VLNS_PROVIDER_ID", "openai-compatible").strip(),
@@ -94,6 +96,7 @@ class VLNSGateConfig:
             allowed_capabilities=_csv(env, "VLNS_ALLOWED_CAPABILITIES"),
             allowed_tools=_csv(env, "VLNS_ALLOWED_TOOLS"),
             mind_capabilities=tuple(sorted(_csv(env, "VX_VLNS_MIND_CAPABILITIES") or {"reasoning", "verification"})),
+            evidence_path=env.get("VX_VLNS_EVIDENCE_DB", "var/vx_vlns_evidence.sqlite3").strip(),
             timeout_seconds=timeout,
         )
 
@@ -217,9 +220,9 @@ class VLNSActivationGate:
                 "provenance": provenance,
                 "evidence_status": "REMOTE_RECEIPT_VALIDATED",
             }
-            event_status, _event_receipt = self._request(cfg.event_path, event)
-            if not 200 <= event_status < 300:
-                return ActivationResult(False, "ACTIVATED_EVIDENCE_PENDING", activation_id, digest, "EVIDENCE_EVENT_NOT_ACKNOWLEDGED")
+            local_record = VXActivationEvidenceJournal(cfg.evidence_path).record(event)
+            if not local_record.get("ok"):
+                return ActivationResult(False, "ACTIVATED_EVIDENCE_PENDING", activation_id, digest, str(local_record.get("status", "LOCAL_VX_EVIDENCE_WRITE_FAILED")))
             return ActivationResult(True, "ACTIVATED_AND_RECORDED", activation_id, digest)
         except HTTPError as exc:
             return ActivationResult(False, "TRANSPORT_FAILED", activation_id, digest, f"HTTP_ERROR_{exc.code}")
@@ -350,6 +353,136 @@ class VLNSGuardedMindAdapter:
         return output
 
 
+class VXActivationEvidenceJournal:
+    """Local, durable, append-only and hash-linked activation evidence journal."""
+
+    def __init__(self, path: str) -> None:
+        if not isinstance(path, str) or not path.strip():
+            raise ValueError("VX_VLNS_EVIDENCE_DB_REQUIRED")
+        self.path = path.strip()
+
+    @staticmethod
+    def _digest(value: Mapping[str, Any]) -> str:
+        return hashlib.sha256(canonical_json(dict(value)).encode("utf-8")).hexdigest()
+
+    def record(self, event: Mapping[str, Any]) -> dict[str, Any]:
+        activation_id = event.get("activation_id")
+        if not isinstance(activation_id, str) or not activation_id:
+            return {"ok": False, "status": "LOCAL_EVENT_ID_REQUIRED"}
+        if event.get("event_type") != "VLNS_MODEL_ACTIVATION_CONFIRMED":
+            return {"ok": False, "status": "LOCAL_EVENT_TYPE_INVALID"}
+        event_id = "vlns-activation:" + activation_id
+        db_path = self.path
+        if db_path != ":memory:":
+            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with sqlite3.connect(db_path) as connection:
+                connection.execute("PRAGMA journal_mode=WAL")
+                connection.execute("PRAGMA synchronous=FULL")
+                connection.execute(
+                    """CREATE TABLE IF NOT EXISTS activation_events (
+                        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+                        event_id TEXT NOT NULL UNIQUE,
+                        event_type TEXT NOT NULL,
+                        aggregate_id TEXT NOT NULL,
+                        actor_id TEXT NOT NULL,
+                        capability TEXT NOT NULL,
+                        payload_json TEXT NOT NULL,
+                        created_at TEXT NOT NULL,
+                        previous_hash TEXT NOT NULL,
+                        event_hash TEXT NOT NULL UNIQUE
+                    )"""
+                )
+                existing = connection.execute(
+                    "SELECT sequence,event_type,aggregate_id,payload_json,event_hash FROM activation_events WHERE event_id=?",
+                    (event_id,),
+                ).fetchone()
+                payload_json = canonical_json(dict(event))
+                if existing is not None:
+                    if (
+                        existing[1] == event["event_type"]
+                        and existing[2] == activation_id
+                        and existing[3] == payload_json
+                        and self.verify_integrity(connection)
+                    ):
+                        head = connection.execute(
+                            "SELECT event_hash FROM activation_events ORDER BY sequence DESC LIMIT 1"
+                        ).fetchone()
+                        return {
+                            "ok": True, "status": "LOCAL_VX_EVENT_ALREADY_RECORDED",
+                            "data": {"event_id": event_id, "event_hash": existing[4],
+                                     "sequence": existing[0], "ledger_head": head[0] if head else "GENESIS"},
+                        }
+                    return {"ok": False, "status": "LOCAL_VX_EVENT_ID_COLLISION_OR_LEDGER_INVALID"}
+                head = connection.execute(
+                    "SELECT event_hash FROM activation_events ORDER BY sequence DESC LIMIT 1"
+                ).fetchone()
+                previous_hash = head[0] if head else "GENESIS"
+                created_at = datetime.now(timezone.utc).isoformat()
+                body = {
+                    "event_id": event_id,
+                    "event_type": str(event["event_type"]),
+                    "aggregate_id": activation_id,
+                    "actor_id": "VX:vx-agents-fabric",
+                    "capability": "model_activation",
+                    "payload": dict(event),
+                    "created_at": created_at,
+                }
+                event_hash = self._digest({**body, "previous_hash": previous_hash})
+                cursor = connection.execute(
+                    """INSERT INTO activation_events(
+                        event_id,event_type,aggregate_id,actor_id,capability,payload_json,
+                        created_at,previous_hash,event_hash
+                    ) VALUES(?,?,?,?,?,?,?,?,?)""",
+                    (event_id, body["event_type"], activation_id, body["actor_id"], body["capability"],
+                     payload_json, created_at, previous_hash, event_hash),
+                )
+                connection.commit()
+                if not self.verify_integrity(connection):
+                    return {"ok": False, "status": "LOCAL_VX_LEDGER_INTEGRITY_FAILED"}
+                return {
+                    "ok": True,
+                    "status": "LOCAL_VX_EVENT_RECORDED",
+                    "data": {
+                        "event_id": event_id, "event_hash": event_hash,
+                        "sequence": int(cursor.lastrowid), "ledger_head": event_hash,
+                    },
+                }
+        except (OSError, sqlite3.Error, TypeError, ValueError) as exc:
+            return {"ok": False, "status": "LOCAL_VX_EVIDENCE_WRITE_FAILED:" + type(exc).__name__}
+
+    def verify_integrity(self, connection: sqlite3.Connection | None = None) -> bool:
+        owned = connection is None
+        conn = connection or sqlite3.connect(self.path)
+        try:
+            rows = conn.execute(
+                """SELECT event_id,event_type,aggregate_id,actor_id,capability,payload_json,
+                          created_at,previous_hash,event_hash
+                   FROM activation_events ORDER BY sequence"""
+            ).fetchall()
+            previous = "GENESIS"
+            for row in rows:
+                event_id, event_type, aggregate_id, actor_id, capability, payload_json, created_at, previous_hash, event_hash = row
+                try:
+                    payload = json.loads(payload_json)
+                except json.JSONDecodeError:
+                    return False
+                body = {
+                    "event_id": event_id, "event_type": event_type, "aggregate_id": aggregate_id,
+                    "actor_id": actor_id, "capability": capability, "payload": payload,
+                    "created_at": created_at, "previous_hash": previous,
+                }
+                if previous_hash != previous or self._digest(body) != event_hash:
+                    return False
+                previous = event_hash
+            return True
+        except sqlite3.Error:
+            return False
+        finally:
+            if owned:
+                conn.close()
+
+
 __all__ = [
-    "ActivationResult", "VLNSActivationGate", "VLNSGateConfig", "VLNSGuardedAgentAdapter", "VLNSGuardedMindAdapter",
+    "ActivationResult", "VLNSActivationGate", "VLNSGateConfig", "VLNSGuardedAgentAdapter", "VLNSGuardedMindAdapter", "VXActivationEvidenceJournal",
 ]
