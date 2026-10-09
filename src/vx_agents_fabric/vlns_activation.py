@@ -80,9 +80,11 @@ class VLNSGateConfig:
         if timeout <= 0:
             raise ValueError("VX_VLNS_ACTIVATION_TIMEOUT_must_be_positive")
         raw_key = env.get("VLNS_ACTIVATION_SIGNING_KEY", "")
+        server_enabled = env.get("VLNS_SERVER_ENABLED", "false").strip().lower() in {"1", "true", "yes"}
+        configured_url = env.get("VLNS_SERVER_URL", "").strip().rstrip("/") if server_enabled else ""
         return cls(
             required=required,
-            base_url=env.get("VLNS_SERVER_URL", "").strip().rstrip("/"),
+            base_url=configured_url,
             activation_path=env.get("VLNS_SERVER_ACTIVATION_PATH", "/v1/activations").strip(),
             event_path=env.get("VLNS_SERVER_EVENT_PATH", "/events").strip(),
             token=env.get("VLNS_SERVER_TOKEN") or None,
