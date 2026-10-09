@@ -153,6 +153,42 @@ class OfficeSkillRoutingTests(unittest.TestCase):
         self.assertTrue(routes["UIUX_DESIGN_SYSTEM"]["canonical_persist_requires_approval"])
         self.assertIn("accessibility_review", routes["UIUX_DESIGN_SYSTEM"]["required_artifacts"])
 
+    def test_ui_ux_pro_max_version_record_is_current_and_not_claimed_installed(self):
+        integration = next(
+            item for item in self.config["design_intelligence_integrations"]
+            if item["integration_id"] == "UI_UX_PRO_MAX"
+        )
+        self.assertEqual(integration["upstream_version_observed"], "2.15.0")
+        self.assertEqual(integration["installed_status"], "NOT_VERIFIED")
+        self.assertEqual(
+            integration["version_source"],
+            "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/releases",
+        )
+
+    def test_whatsapp_cloud_api_route_fails_closed_without_live_setup(self):
+        integration = next(
+            item for item in self.config["communication_integrations"]
+            if item["integration_id"] == "WHATSAPP_BUSINESS_CLOUD_API"
+        )
+        self.assertEqual(integration["connection_status"], "NOT_CONFIGURED")
+        self.assertEqual(integration["webhook_status"], "NOT_CONFIGURED")
+        routes = {item["phase"]: item for item in self.config["phase_routes"]}
+        route = routes["WHATSAPP_BUSINESS_MESSAGING"]
+        self.assertEqual(route["on_missing_credentials"], "HOLD_NOT_CONFIGURED")
+        self.assertEqual(route["on_missing_approval"], "HOLD")
+        self.assertFalse(route["auto_bulk_send"])
+        self.assertFalse(route["auto_canonical_mutation"])
+
+    def test_whatsapp_example_contains_no_credentials_or_live_activation(self):
+        example_path = ROOT / "config" / "whatsapp_cloud_api.example.json"
+        example = json.loads(example_path.read_text(encoding="utf-8"))
+        self.assertEqual(example["status"], "EXAMPLE_ONLY_NOT_CONFIGURED")
+        self.assertFalse(example["policy"]["production_enabled"])
+        self.assertFalse(example["policy"]["allow_bulk_outreach"])
+        rendered = json.dumps(example)
+        self.assertNotIn("Bearer ", rendered)
+        self.assertIn("SECRET_STORE_ONLY", rendered)
+
 
 if __name__ == "__main__":
     unittest.main()
