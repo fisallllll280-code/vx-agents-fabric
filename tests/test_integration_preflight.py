@@ -92,7 +92,8 @@ class IntegrationPreflightTests(unittest.TestCase):
             endpoint="https://lookalike.example/mcp",
             capabilities=["image_generation", "video_generation"],
             evidence=["mcp_initialize_receipt", "mcp_tools_list_receipt",
-                      "image_job_receipt", "video_job_receipt"],
+                      "image_generation_approval_receipt", "image_job_receipt",
+                      "video_generation_approval_receipt", "video_job_receipt"],
             operations=["create_image", "create_video"],
         )
         result = evaluate_attestation("HIGGSFIELD", att, secret=SECRET, now=NOW)
@@ -138,7 +139,7 @@ class IntegrationPreflightTests(unittest.TestCase):
         self.assertEqual(set(result.available_operations), {"actual_image_tool", "actual_video_tool"})
 
     def test_whatsapp_needs_connection_and_live_acceptance_evidence(self):
-        capabilities = ["inbound_webhook", "outbound_send", "delivery_status_webhook"]
+        capabilities = ["inbound_webhook", "outbound_send", "delivery_status_webhook", "recipient_consent_gate"]
         connected_evidence = ["business_account_check", "webhook_verification_receipt"]
         att = make_attestation("WHATSAPP_BUSINESS_CLOUD_API",
                                capabilities=capabilities, evidence=connected_evidence)
@@ -146,7 +147,7 @@ class IntegrationPreflightTests(unittest.TestCase):
         self.assertEqual(result.state, "CONNECTED_NOT_OPERATIONAL")
         operational_evidence = connected_evidence + [
             "inbound_test_message_receipt", "outbound_test_message_receipt",
-            "delivery_status_webhook_receipt", "signature_negative_test",
+            "delivery_status_webhook_receipt", "signature_negative_test", "consent_negative_test",
         ]
         att = make_attestation("WHATSAPP_BUSINESS_CLOUD_API",
                                capabilities=capabilities, evidence=operational_evidence)
