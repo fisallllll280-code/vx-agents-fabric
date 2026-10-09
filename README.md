@@ -75,6 +75,16 @@ The command returns exit code 0 only when it produces a candidate eligible for s
 - Local math tools are executable immediately; GitHub is read-only; sandbox and solver gateways remain `NOT_CONFIGURED` unless explicitly bound.
 - Unit tests: `PYTHONPATH=src python -m unittest discover -s tests -v`
 
+## System Language Fabric
+
+- [System Language Fabric v1](docs/integration/SYSTEM_LANGUAGE_FABRIC_V1.md)
+- Registry: **config/system_language_registry.v1.json**
+- Registry schema: **schemas/system_language_registry.schema.json**
+- Read-only analysis module: **src/vx_agents_fabric/system_language_fabric.py**
+- Run: **PYTHONPATH=src python -m vx_agents_fabric.system_language_fabric --config config/system_language_registry.v1.json --list**
+- Safe JSON/Python-AST/math-expression syntax analysis is not semantic verification. Missing grammar, compiler or semantic adapters force HOLD; no code execution or canonical mutation occurs.
+- Tests: **PYTHONPATH=src python -m unittest discover -s tests -p test_system_language_fabric.py -v**
+
 ## Governed Prompt Office integrations
 
 - [Superpowers × Prompt Office integration contract](docs/integration/SUPERPOWERS_PROMPT_OFFICE_FABRIC_V1.md)
