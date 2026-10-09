@@ -195,6 +195,14 @@ class IntegrationPreflightTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "at_least_32_bytes"):
             attestation_signature({"provider_id": "HIGGSFIELD"}, "short")
 
+    def test_local_secrets_and_signed_runtime_attestations_are_git_ignored(self):
+        ignore_path = Path(__file__).resolve().parents[1] / ".gitignore"
+        ignore_text = ignore_path.read_text(encoding="utf-8")
+        self.assertIn(".env", ignore_text)
+        self.assertIn("runtime/integration-attestations/*.json", ignore_text)
+        self.assertIn("*.pem", ignore_text)
+        self.assertIn("*.key", ignore_text)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
