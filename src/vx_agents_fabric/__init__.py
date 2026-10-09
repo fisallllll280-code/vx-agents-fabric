@@ -10,4 +10,7 @@ __all__ = [
     "AgentSpec", "Artifact", "TaskEnvelope", "WorkflowReport",
     "AgentRegistry", "default_registry", "EngineeringOrchestrator",
     "ArtifactArchive", "FailureMemory", "IntegrityLedger",
+    "build_orchestrator_adapter",
 ]
+
+from .language_orchestrator_adapter import build_orchestrator_adapter
