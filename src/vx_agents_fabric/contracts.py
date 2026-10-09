@@ -95,6 +95,16 @@ class AgentRunResult:
 
 
 @dataclass(frozen=True)
+class MindReview:
+    mind_id: str
+    status: str
+    rationale: tuple[str, ...]
+    evidence_refs: tuple[str, ...]
+    hard_gate_failures: tuple[str, ...]
+    output_hash: str
+
+
+@dataclass(frozen=True)
 class WorkflowEvent:
     sequence: int
     workflow_id: str
@@ -121,6 +131,7 @@ class WorkflowReport:
     status: str
     results: list[AgentRunResult] = field(default_factory=list)
     artifacts: list[Artifact] = field(default_factory=list)
+    mind_reviews: list[MindReview] = field(default_factory=list)
     decision: EngineeringDecision | None = None
     event_count: int = 0
     ledger_head: str = ""
@@ -130,6 +141,7 @@ class WorkflowReport:
         return {
             "workflow_id": self.workflow_id, "goal": self.goal, "status": self.status,
             "result_count": len(self.results), "artifact_count": len(self.artifacts),
+            "mind_review_count": len(self.mind_reviews),
             "missing_adapters": sorted(set(self.missing_adapters)),
             "decision": asdict(self.decision) if self.decision else None,
             "event_count": self.event_count, "ledger_head": self.ledger_head,

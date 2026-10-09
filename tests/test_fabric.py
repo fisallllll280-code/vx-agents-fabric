@@ -41,20 +41,43 @@ class SafetyAndLineageTests(unittest.TestCase):
         self.assertTrue(ledger.verify())
         self.assertEqual(second.previous_hash, first.event_hash)
 
-    def test_missing_adapters_force_hold(self):
+    def test_missing_adapters_force_hold_and_are_not_misreported_as_reviews(self):
         report = EngineeringOrchestrator().run("Design a resilient engineering workflow")
         self.assertEqual(report.status, "HOLD")
         self.assertGreater(len(report.missing_adapters), 0)
         self.assertFalse(report.decision.production_authorized)
         self.assertTrue(report.ledger_head)
+        self.assertEqual(report.decision.reviewed_minds, ())
         self.assertTrue(any(item.startswith("live_adapters_missing") for item in report.decision.rationale))
 
-    def test_release_stays_blocked_until_readiness(self):
-        orchestrator = EngineeringOrchestrator()
-        report = orchestrator.run("Test release gate")
-        allowed, reason = orchestrator.authorize_release(report, governance_approval_ref="GOV-123")
+    def test_configured_agent_and_mind_adapters_produce_governance_candidate_only(self):
+        registry = default_registry()
+        def agent_adapter(envelope):
+            return {
+                "artifact_id": envelope.task_id + ":artifact",
+                "kind": envelope.required_output,
+                "status": "PASS",
+                "content": {"task_id": envelope.task_id, "goal": envelope.goal},
+                "evidence_refs": ["fixture://evidence/" + envelope.agent.role_id],
+            }
+        agent_adapters = {spec.role_id: agent_adapter for spec in registry.all_agents()}
+        def make_mind_adapter(mind_id):
+            return lambda context: {
+                "status": "PASS",
+                "rationale": ["independent fixture review only"],
+                "evidence_refs": ["fixture://mind-review/" + mind_id],
+                "hard_gate_failures": [],
+            }
+        mind_adapters = {mind_id: make_mind_adapter(mind_id) for mind_id in registry.minds}
+        orchestrator = EngineeringOrchestrator(registry, agent_adapters, mind_adapters)
+        report = orchestrator.run("Test the engineering pipeline", workflow_id="WF-TEST-FULL")
+        self.assertEqual(report.status, "CANDIDATE_READY_FOR_GOVERNANCE")
+        self.assertEqual(len(report.mind_reviews), len(registry.minds))
+        self.assertEqual(set(report.decision.reviewed_minds), set(registry.minds))
+        self.assertFalse(report.decision.production_authorized)
+        allowed, reason = orchestrator.authorize_release(report, governance_approval_ref="GOV-EXAMPLE")
         self.assertFalse(allowed)
-        self.assertEqual(reason, "CANDIDATE_HAS_NOT_PASSED_READINESS_GATES")
+        self.assertIn("GOVERNANCE_ADAPTER_NOT_CONNECTED", reason)
 
 
 if __name__ == "__main__":

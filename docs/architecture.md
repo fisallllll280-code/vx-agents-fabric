@@ -13,7 +13,7 @@ Do not connect every agent to every system. Each agent connects to VX through a 
 
 A logical role is identified by role_id. Each immutable implementation is role_id@version. Parallel versions remain available for comparison and rollback. Routing without a pinned version chooses the highest enabled SemVer-like version; deployed workflows should pin versions after validation. Alias collisions and attempts to overwrite an existing version are rejected.
 
-Catalog registration does not mean that a model is connected, the role is production-admitted or its behavior is proven. Provider connections are injected through EngineeringOrchestrator(adapters=...).
+Catalog registration does not mean that a model is connected, the role is production-admitted or its behavior is proven. Agent adapters are injected through EngineeringOrchestrator(adapters=...). Parent mind adapters are independently injected through mind_adapters. Every mind defaults to DECLARED_NOT_CONNECTED until a provider/model version is bound.
 
 ## Independent mind council
 
@@ -24,7 +24,7 @@ Five declared review perspectives:
 4. Security and adversarial failure analysis.
 5. Proof obligations, test validity and reproducibility.
 
-These are review roles, not connected model instances. MindSpec defaults to DECLARED_NOT_CONNECTED until a real provider and exact model version are bound. Agreement cannot override a hard failure, missing evidence, a missing adapter or an invalid ledger.
+A mind review is listed as reviewed only after its configured adapter returns an accepted state. Agreement cannot override hard failures, missing evidence, missing adapters or an invalid ledger. All parent reviews are retained as hashed outputs.
 
 ## Lifecycle and automation
 
@@ -34,15 +34,15 @@ For each stage the orchestrator creates a task envelope, invokes the configured 
 
 The orchestration is automatic; actual research, model inference and code execution depend on configured providers and tools. An absent adapter is recorded as NOT_CONFIGURED and forces HOLD.
 
-## No-loss / failure-learning protocol
+## No-loss and failure-learning protocol
 
-Each task should preserve workflow_id, task_id, role ID/version, input artifact IDs/hashes, evidence references, output hash, limitations, error code and predecessor event hash. Failures and missing adapters must remain in the workflow report. Recovery adapters should persist resumable checkpoints, replayable events and a dead-letter queue.
+Each task preserves workflow_id, task_id, role ID/version, input artifact IDs, evidence references, output hash, limitations, error code and predecessor event hash. Failures and missing adapters remain in the workflow report. Recovery adapters should persist resumable checkpoints, replayable events and a dead-letter queue.
 
 The included IntegrityLedger is in-memory and not durable across process restarts. A production deployment must replace it with the VAIXLNS Event/Ledger adapter and test crash recovery and replay.
 
 ## Scope controls
 
-Allowed scopes are read-only, research, analysis, planning, proposal, verification, sandbox, sandbox-write and decision-proposal. The default boundary denies canonical mutation, production deployment, source deletion, payments, transfers, trading, access-policy changes and irreversible publishing. Financial agents are analysis-only/proposal-only for financial decisions; they do not execute transactions.
+Allowed scopes are read-only, research, analysis, planning, proposal, verification, sandbox, sandbox-write and decision-proposal. The default boundary denies canonical mutation, production deployment, source deletion, payments, transfers, trading, access-policy changes and irreversible publishing. Financial agents are analysis/proposal only; they do not execute transactions.
 
 Tool permissions must be enforced by the calling runtime, outside the model. Implement adapters with least privilege, network restrictions, budgets/timeouts, dependency pinning, secret isolation, sandbox execution and audit logs.
 
