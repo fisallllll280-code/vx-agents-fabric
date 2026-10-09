@@ -5,6 +5,8 @@ import unittest
 from unittest.mock import patch
 
 from vx_agents_fabric.contracts import AgentSpec, Artifact, TaskEnvelope, content_hash
+from vx_agents_fabric.providers import build_from_env
+from vx_agents_fabric.registry import AgentRegistry
 from vx_agents_fabric.vlns_activation import (
     VLNSActivationGate,
     VLNSGateConfig,
@@ -167,6 +169,36 @@ class VLNSActivationGateTests(unittest.TestCase):
         self.assertEqual(calls, [])
         self.assertTrue(result["hard_gate_failures"][0].startswith("VLNS_ACTIVATION_"))
 
+
+    def test_factory_wraps_configured_agents_when_gate_is_required(self):
+        registry = AgentRegistry()
+        spec = AgentSpec(
+            role_id="VX-RES-COORD", name="Research Coordinator", family="research",
+            version="1.0.0", capabilities=("research", "decomposition"),
+            inputs=("goal",), outputs=("research_plan",), authority_scope="planning",
+        )
+        registry.register(spec)
+        env = {
+            "VX_OPENAI_COMPAT_BASE_URL": "http://127.0.0.1:11434/v1",
+            "VX_RESEARCH_MODEL": "research-model",
+            "VX_VLNS_ACTIVATION_REQUIRED": "true",
+            "VX_VLNS_PROVIDER_ID": "openai-compatible",
+            "VLNS_ALLOWED_PROVIDERS": "openai-compatible",
+            "VLNS_ALLOWED_CAPABILITIES": "research,decomposition",
+            "VLNS_ALLOWED_TOOLS": "",
+            "VLNS_ACTIVATION_SIGNING_KEY": KEY.decode("utf-8"),
+        }
+        bindings = build_from_env(registry, env)
+        self.assertTrue(bindings.vlns_activation_required)
+        self.assertFalse(bindings.vlns_gate_configured)
+        guarded = bindings.agent_adapters["VX-RES-COORD@1.0.0"]
+        result = guarded(TaskEnvelope(
+            task_id="T1", workflow_id="WF1", stage="INTAKE", goal="discover",
+            agent=spec, payload={"goal": "discover"}, input_artifact_ids=(),
+            authority_scope="planning", required_output="research_plan",
+        ))
+        self.assertEqual(result.status, "HOLD")
+        self.assertIn("NOT_CONFIGURED", result.limitations)
 
 if __name__ == "__main__":
     unittest.main()
