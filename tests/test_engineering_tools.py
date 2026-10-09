@@ -116,6 +116,75 @@ class ToolHubPolicyTests(unittest.TestCase):
         }.issubset(ids))
 
 
+    def test_dispatcher_emits_vx_decision_and_hash_chained_receipt(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-TEST", role_version="1.0.0",
+            caller_family="engineering", authority_scope="analysis",
+            capabilities=("math_evaluation",),
+            allowed_tool_ids=("math.evaluate",),
+        )
+        dispatcher = BoundEngineeringToolDispatcher(self.hub, policy)
+        result = dispatcher.invoke("math.evaluate", {"expression": "6*7"})
+        self.assertEqual(result.status, "COMPLETED")
+        self.assertEqual(result.control_decision["gate"], "VX_FEDERATION_GATE")
+        self.assertEqual(result.control_decision["decision"], "ALLOW")
+        self.assertEqual(result.control_decision["execution_status"], "COMPLETED")
+        self.assertEqual(len(dispatcher.control_events), 1)
+        event = dispatcher.control_events[0]
+        self.assertEqual(event["execution_status"], "COMPLETED")
+        self.assertEqual(event["previous_event_sha256"], "0" * 64)
+        self.assertEqual(len(event["event_sha256"]), 64)
+        self.assertNotIn("arguments", event)
+        self.assertTrue(dispatcher.control_gate.verify_event_chain())
+
+    def test_dispatcher_budget_stops_additional_tool_calls(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-TEST", role_version="1.0.0",
+            caller_family="engineering", authority_scope="analysis",
+            capabilities=("math_evaluation",),
+            allowed_tool_ids=("math.evaluate",),
+            max_tool_calls=1,
+        )
+        dispatcher = BoundEngineeringToolDispatcher(self.hub, policy)
+        first = dispatcher.invoke("math.evaluate", {"expression": "2+2"})
+        second = dispatcher.invoke("math.evaluate", {"expression": "3+3"})
+        self.assertEqual(first.status, "COMPLETED")
+        self.assertEqual(second.status, "BLOCKED")
+        self.assertEqual(second.error_code, "vx_budget_tool_call_limit")
+        self.assertEqual(second.control_decision["execution_status"], "NOT_EXECUTED")
+        self.assertEqual(len(dispatcher.control_events), 2)
+        self.assertTrue(dispatcher.control_gate.verify_event_chain())
+
+    def test_emergency_stop_blocks_bound_tool_before_execution(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-TEST", role_version="1.0.0",
+            caller_family="engineering", authority_scope="analysis",
+            capabilities=("math_evaluation",),
+            allowed_tool_ids=("math.evaluate",),
+        )
+        dispatcher = BoundEngineeringToolDispatcher(self.hub, policy)
+        dispatcher.activate_emergency_stop("test_stop")
+        result = dispatcher.invoke("math.evaluate", {"expression": "2+2"})
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertEqual(result.control_decision["decision"], "REJECT")
+        self.assertEqual(result.error_code, "emergency_stop_active:test_stop")
+        self.assertEqual(result.control_decision["execution_status"], "NOT_EXECUTED")
+        with self.assertRaisesRegex(PermissionError, "authorized_operator"):
+            dispatcher.clear_emergency_stop(authorized=False)
+        self.assertTrue(dispatcher.control_gate.verify_event_chain())
+
+    def test_dispatcher_rejects_unbounded_host_policy(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-TEST", role_version="1.0.0",
+            caller_family="engineering", authority_scope="analysis",
+            capabilities=("math_evaluation",),
+            allowed_tool_ids=("math.evaluate",),
+            max_tool_calls=257,
+        )
+        with self.assertRaisesRegex(ValueError, "max_tool_calls_out_of_hard_bounds"):
+            BoundEngineeringToolDispatcher(self.hub, policy)
+
+
 class GitHubAdapterTests(unittest.TestCase):
     def test_fetch_file_returns_content_blob_sha_and_source_url(self):
         raw = "# engineering spec\npass\n"
