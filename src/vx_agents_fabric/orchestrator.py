@@ -122,13 +122,33 @@ class EngineeringOrchestrator:
             for role_id in role_ids:
                 spec = self.registry.resolve(role_id, self.version_pins.get(role_id))
                 task_id = f"{workflow_id}:{stage}:{spec.key}"
-                inputs = tuple(artifact.artifact_id for artifact in report.artifacts)
+                allowed_families = set(spec.input_families or (spec.family,))
+                # Explicitly scoped context is never broadcast to every agent.
+                domain_keys = {"shared", "research", "finance", "engineering", "governance"}
+                if any(key in context_payload for key in domain_keys):
+                    scoped_context = {
+                        key: context_payload[key] for key in allowed_families
+                        if key in context_payload and key in domain_keys
+                    }
+                else:
+                    # Unscoped caller context is treated as shared input; sensitive payloads
+                    # should instead be placed under their explicit family key.
+                    scoped_context = {"shared": context_payload} if context_payload else {}
+
+                visible_artifacts = []
+                for candidate in report.artifacts:
+                    source_spec = self.registry.resolve(candidate.source_agent, candidate.source_version)
+                    if source_spec.family in allowed_families:
+                        visible_artifacts.append(candidate)
+                inputs = tuple(artifact.artifact_id for artifact in visible_artifacts)
                 task_payload = {
-                    "goal": goal, "context": context_payload,
+                    "goal": goal, "context": scoped_context,
+                    "visible_input_families": sorted(allowed_families),
                     "prior_artifacts": [
                         {"artifact_id": a.artifact_id, "kind": a.kind, "status": a.status,
+                         "source_agent": a.source_agent, "source_version": a.source_version,
                          "sha256": a.sha256, "evidence_refs": list(a.evidence_refs)}
-                        for a in report.artifacts
+                        for a in visible_artifacts
                     ],
                     "stage": stage, "required_output": spec.outputs,
                     "invariants": [

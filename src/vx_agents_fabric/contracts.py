@@ -29,6 +29,7 @@ class AgentSpec:
     aliases: tuple[str, ...] = ()
     enabled: bool = True
     admission_status: str = "DESIGN_ONLY"
+    input_families: tuple[str, ...] = ()
 
     @property
     def key(self) -> str:

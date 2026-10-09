@@ -79,11 +79,25 @@ class AgentRegistry:
             self.register(spec)
 
 
+def _allowed_input_families(family: str) -> tuple[str, ...]:
+    # Context/artifacts cross team boundaries only along this explicit dependency graph.
+    scopes = {
+        "research": ("shared", "research"),
+        "finance": ("shared", "research", "finance"),
+        "engineering": ("shared", "research", "finance", "engineering"),
+        "governance": ("shared", "research", "finance", "engineering", "governance"),
+    }
+    return scopes.get(family, ("shared", family))
+
+
 def _spec(role_id: str, name: str, family: str, caps: tuple[str, ...],
           inputs: tuple[str, ...], outputs: tuple[str, ...], authority: str,
           evidence: tuple[str, ...] = (), aliases: tuple[str, ...] = ()) -> AgentSpec:
-    return AgentSpec(role_id, name, family, "1.0.0", caps, inputs, outputs, authority,
-                     evidence, ("output_schema_valid", "provenance_preserved"), aliases)
+    return AgentSpec(
+        role_id, name, family, "1.0.0", caps, inputs, outputs, authority,
+        evidence, ("output_schema_valid", "provenance_preserved"), aliases,
+        input_families=_allowed_input_families(family),
+    )
 
 
 def default_registry() -> AgentRegistry:

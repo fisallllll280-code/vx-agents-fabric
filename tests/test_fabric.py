@@ -36,6 +36,16 @@ class RegistryTests(unittest.TestCase):
             registry.resolve("VX-ENG-TEST").outputs.count("replay_report"), 0
         )
 
+    def test_agent_input_families_are_explicitly_scoped(self):
+        registry = default_registry()
+        research = registry.resolve("VX-RES-SOURCE")
+        finance = registry.resolve("VX-FIN-RISK")
+        engineering = registry.resolve("VX-ENG-ARCH")
+        self.assertEqual(set(research.input_families), {"shared", "research"})
+        self.assertEqual(set(finance.input_families), {"shared", "research", "finance"})
+        self.assertIn("engineering", engineering.input_families)
+        self.assertNotIn("finance", research.input_families)
+
 
 class SafetyAndLineageTests(unittest.TestCase):
     def test_financial_transactions_are_denied_by_default(self):
@@ -61,7 +71,13 @@ class SafetyAndLineageTests(unittest.TestCase):
 
     def test_configured_agent_and_mind_adapters_produce_governance_candidate_only(self):
         registry = default_registry()
+        observed_context = {}
         def agent_adapter(envelope):
+            observed_context[envelope.agent.role_id] = {
+                "context": dict(envelope.payload["context"]),
+                "visible_families": tuple(envelope.payload["visible_input_families"]),
+                "prior_sources": tuple(item["source_agent"] for item in envelope.payload["prior_artifacts"]),
+            }
             return {
                 "artifact_id": envelope.task_id + ":artifact",
                 "kind": envelope.required_output,
@@ -81,8 +97,23 @@ class SafetyAndLineageTests(unittest.TestCase):
         orchestrator = EngineeringOrchestrator(
             registry, agent_adapters, mind_adapters, version_pins={"VX-ENG-TEST": "1.0.0"}
         )
-        report = orchestrator.run("Test the engineering pipeline", workflow_id="WF-TEST-FULL")
+        report = orchestrator.run(
+            "Test the engineering pipeline", workflow_id="WF-TEST-FULL",
+            context={
+                "shared": {"intent": "safe-to-share"},
+                "research": {"source_note": "research-only"},
+                "finance": {"budget_note": "finance-only"},
+                "engineering": {"design_note": "engineering-only"},
+            },
+        )
         self.assertEqual(report.status, "CANDIDATE_READY_FOR_GOVERNANCE")
+        self.assertIn("finance", observed_context["VX-FIN-RISK"]["context"])
+        self.assertNotIn("engineering", observed_context["VX-FIN-RISK"]["context"])
+        self.assertNotIn("finance", observed_context["VX-RES-SOURCE"]["context"])
+        self.assertIn("research", observed_context["VX-ENG-ARCH"]["context"])
+        self.assertIn("finance", observed_context["VX-ENG-ARCH"]["context"])
+        self.assertNotIn("finance", observed_context["VX-RES-SOURCE"]["visible_families"])
+        self.assertNotIn("VX-ENG-COORD", observed_context["VX-FIN-RISK"]["prior_sources"])
         test_result = next(item for item in report.results if item.agent_id == "VX-ENG-TEST")
         self.assertEqual(test_result.agent_version, "1.0.0")
         self.assertEqual(len(report.mind_reviews), len(registry.minds))

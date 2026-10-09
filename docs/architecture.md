@@ -51,3 +51,10 @@ Tool permissions must be enforced by the calling runtime, outside the model. Imp
 Send candidate artifacts, hashes, lineage and evidence references to the VAIXLNS admission interface; invoke the configured Ω-RAC/proof verifier; consume an explicit governance decision with policy-version reference; and never use this package as a substitute for canonical authority or proof verification.
 
 No live credentials, financial-account access or production authority are embedded in this repository.
+
+
+## Explicit team data boundaries
+
+Agent contracts declare input families. Research roles receive shared and research context only; finance roles may receive shared, research and finance context; engineering roles may receive shared, research, finance and engineering context; governance-level review may inspect the assembled record. Prior artifacts are filtered by the producing agent's registered family before they enter a specialist task. Domain-specific context should be passed under explicit keys named shared, research, finance, engineering or governance; do not put secrets in shared context.
+
+The default catalog preserves several specialist contract variants at version 1.0.0 and 1.1.0. Workflows can pin role versions, while adapters may be registered at role_id@version to keep distinct implementations side by side. A role-level adapter is a fallback, not proof that the underlying model versions are distinct.
