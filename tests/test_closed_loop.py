@@ -168,5 +168,27 @@ class ClosedLoopTests(unittest.TestCase):
             controller.transition(LoopState.DISCOVERY, evidence(), now=NOW)
 
 
+class AgentRoutingTests(unittest.TestCase):
+    def test_new_index_server_and_development_roles_are_registered_and_routed(self):
+        from vx_agents_fabric.orchestrator import PIPELINE
+        from vx_agents_fabric.registry import default_registry
+
+        registry = default_registry()
+        required = {
+            "VX-SRV-RECON",
+            "VX-IDX-ARCHIVE",
+            "VX-IDX-RECON",
+            "VX-ENG-CODE",
+            "VX-ENG-COMPILER",
+            "VX-ENG-DEV",
+        }
+        registered = {item.role_id for item in registry.all_agents()}
+        self.assertTrue(required.issubset(registered))
+        routed = {role_id for _, role_ids in PIPELINE for role_id in role_ids}
+        self.assertTrue(required.issubset(routed))
+        self.assertEqual(registry.resolve("VX-SRV-RECON").authority_scope, "read-only")
+        self.assertEqual(registry.resolve("VX-IDX-ARCHIVE").authority_scope, "read-only")
+
+
 if __name__ == "__main__":
     unittest.main()
