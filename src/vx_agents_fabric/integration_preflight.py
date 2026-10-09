@@ -355,10 +355,17 @@ def preflight(
                 ("attestation_read_or_parse_failed:" + type(exc).__name__,),
             ))
     states = [check.state for check in checks]
+    if checks and all(state == "OPERATIONAL" for state in states):
+        overall_status = "OPERATIONAL"
+    elif any(state in {"INVALID_ATTESTATION", "EXPIRED", "PROBE_FAILED",
+                       "ATTESTATION_KEY_NOT_CONFIGURED"} for state in states):
+        overall_status = "BLOCKED"
+    else:
+        overall_status = "PARTIAL"
     return {
         "schema_version": SCHEMA_VERSION,
         "mode": "READ_ONLY_PREFLIGHT",
-        "status": "OPERATIONAL" if checks and all(s == "OPERATIONAL" for s in states) else "PARTIAL",
+        "status": overall_status,
         "operational_count": sum(check.operational_verified for check in checks),
         "connected_count": sum(check.connection_verified for check in checks),
         "integration_count": len(checks),
