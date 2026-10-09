@@ -145,3 +145,17 @@ The available evidence does not prove:
 - that any system has passed the full admission, recovery/replay and sustained-operation sequence.
 
 These stay explicit gates in the inventory, rather than assumptions filled in by the agents.
+
+
+## 9. Archived external-gate audit — historical claim, not a fresh live test
+
+The archived note named "مراجعة خوادم النظام.txt" recorded successful external-integration gate CI for VAIXLNS, VAIXLNS-unified, vaixlns-core, NEXENT, vaixlns-nexent-vx, VX50_COMPLETE_BUILD, vx-financial-kernel, vaixlns-csd-kernel and NAXLNS; it said the VX-runtime package tests passed while a workflow was still in progress. It explicitly distinguished passing a gate implementation/test from proving every external model or server is live and production-ready. Treat those pass statements as historical archive assertions until matched to exact current commits and fresh workflow-run IDs. NAXLNS still does not prove identity equivalence to VLNS.
+
+The same archived audit listed unresolved system-level work:
+- leader election;
+- replication and consensus;
+- durable process-restart recovery;
+- formal theorem proving;
+- atomic, item-by-item recovery of the legacy master index from 0001 through 2750.
+
+These gaps must remain first-class entries in the master index with owners, prerequisites and evidence links. A claimed legacy count is not a substitute for the full item-by-item source table. No missing IDs should be invented, and no records should be deleted to make a coverage metric look complete.
