@@ -55,12 +55,12 @@ Requires the actual skill manifest and these normalized capabilities: brainstorm
 Requires the actual manifest and version metadata. Operational status requires a sample design output that can be reviewed. A version recorded in the routing JSON is not installation evidence.
 
 ### Higgsfield
-Only accepts the official endpoint `https://mcp.higgsfield.ai/mcp`. Connected status requires a real MCP initialization receipt, tools-list receipt, and discovered image/video capabilities. Operational status additionally requires both image and video job receipts. Since generation through MCP consumes credits, any sample job must carry separate user approval and a cost ceiling before it is submitted; the preflight auditor does not submit it.
+Only accepts the official endpoint `https://mcp.higgsfield.ai/mcp`. Connected status requires a real MCP initialization receipt, tools-list receipt, and discovered image/video capabilities. Operational status additionally requires both image and video job receipts and separate approval/cost-ceiling evidence for each paid generation. Since generation through MCP consumes credits, any sample job must carry explicit user approval and a cost ceiling before it is submitted; the preflight auditor does not submit it.
 
 Official setup and billing information: https://higgsfield.ai/mcp and https://higgsfield.ai/creator-hub/help-center/integrations/what-is-higgsfield-mcp
 
 ### WhatsApp Business Cloud API
-Only accepts HTTPS endpoints at `graph.facebook.com` with an explicit versioned API path. Connected status requires a business-account check and verified webhook receipt, plus outbound, inbound and delivery-status capabilities. Operational status additionally requires inbound/outbound test receipts, a delivery-status webhook receipt, and a negative test proving invalid webhook signatures are rejected.
+Only accepts HTTPS endpoints at `graph.facebook.com` with an explicit versioned API path. Connected status requires a business-account check and verified webhook receipt, plus outbound, inbound and delivery-status capabilities. Operational status additionally requires inbound/outbound test receipts, a delivery-status webhook receipt, a negative test proving invalid webhook signatures are rejected, and a negative test proving an outbound message without required consent is blocked.
 
 Use the official API docs: https://developers.facebook.com/docs/whatsapp/cloud-api/overview
 
