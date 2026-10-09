@@ -65,6 +65,7 @@ class VLNSGateConfig:
     allowed_providers: frozenset[str]
     allowed_capabilities: frozenset[str]
     allowed_tools: frozenset[str]
+    mind_capabilities: tuple[str, ...] = ("reasoning", "verification")
     timeout_seconds: float = 8.0
 
     @classmethod
@@ -90,6 +91,7 @@ class VLNSGateConfig:
             allowed_providers=_csv(env, "VLNS_ALLOWED_PROVIDERS"),
             allowed_capabilities=_csv(env, "VLNS_ALLOWED_CAPABILITIES"),
             allowed_tools=_csv(env, "VLNS_ALLOWED_TOOLS"),
+            mind_capabilities=tuple(sorted(_csv(env, "VX_VLNS_MIND_CAPABILITIES") or {"reasoning", "verification"})),
             timeout_seconds=timeout,
         )
 
@@ -269,6 +271,69 @@ class VLNSGuardedAgentAdapter:
         )
 
 
+class VLNSGuardedMindAdapter:
+    """Gate parent-review mind calls with their own model activation evidence."""
+
+    def __init__(
+        self,
+        adapter: Callable[[Mapping[str, Any]], Mapping[str, Any]],
+        gate: VLNSActivationGate,
+        mind_id: str,
+        model_id: str,
+        model_version: str,
+    ) -> None:
+        self.adapter = adapter
+        self.gate = gate
+        self.mind_id = mind_id
+        self.model_id = model_id
+        self.model_version = model_version
+
+    def __call__(self, payload: Mapping[str, Any]) -> Mapping[str, Any]:
+        safe_payload = dict(payload)
+        review_digest = content_hash(safe_payload)
+        task_id = str(safe_payload.get("task_id") or ("mind-review-" + self.mind_id + "-" + review_digest[:16]))
+        context = {"mind_id": self.mind_id, "review_payload": safe_payload}
+        upper = self.mind_id.upper()
+        role = (
+            "financial_mind" if "FINANCE" in upper else
+            "security_mind" if "SECURITY" in upper else
+            "verifier_mind" if "PROOF" in upper else
+            "architecture_mind" if "ARCH" in upper else
+            "research_mind" if "RESEARCH" in upper else
+            "governance_mind"
+        )
+        result = self.gate.activate(
+            model_id=self.model_id,
+            model_version=self.model_version,
+            role=role,
+            capabilities=self.gate.config.mind_capabilities,
+            task_id=task_id,
+            source_id="vx-mind-review://" + self.mind_id,
+            context=context,
+        )
+        if not result.ok:
+            return {
+                "status": "HOLD",
+                "rationale": ["VLNS activation gate blocked parent review: " + result.status, result.reason],
+                "evidence_refs": [],
+                "hard_gate_failures": ["VLNS_ACTIVATION_" + result.status],
+            }
+        reviewed = self.adapter(safe_payload)
+        if not isinstance(reviewed, Mapping):
+            return {
+                "status": "HOLD",
+                "rationale": ["Parent review returned a non-object result after model activation."],
+                "evidence_refs": list(result.evidence_refs),
+                "hard_gate_failures": ["PARENT_REVIEW_SCHEMA_INVALID"],
+            }
+        output = dict(reviewed)
+        refs = output.get("evidence_refs", [])
+        if not isinstance(refs, list):
+            refs = []
+        output["evidence_refs"] = list(dict.fromkeys([*refs, *result.evidence_refs]))
+        return output
+
+
 __all__ = [
-    "ActivationResult", "VLNSActivationGate", "VLNSGateConfig", "VLNSGuardedAgentAdapter",
+    "ActivationResult", "VLNSActivationGate", "VLNSGateConfig", "VLNSGuardedAgentAdapter", "VLNSGuardedMindAdapter",
 ]
