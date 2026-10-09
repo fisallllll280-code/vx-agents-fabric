@@ -61,7 +61,7 @@ POLICIES: dict[str, dict[str, Any]] = {
         "connect_evidence": ("business_account_check", "webhook_verification_receipt"),
         "operational_evidence": (
             "inbound_test_message_receipt", "outbound_test_message_receipt",
-            "delivery_status_webhook_receipt", "signature_negative_test",
+            "delivery_status_webhook_receipt", "signature_negative_test", "consent_negative_test",
         ),
         "needs_operations": ("inbound_webhook", "outbound_send", "delivery_status_webhook"),
     },
