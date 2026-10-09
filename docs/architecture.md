@@ -67,3 +67,6 @@ An OpenAI-compatible chat endpoint is opt-in. Configure VX_OPENAI_COMPAT_BASE_UR
 Exact role-version overrides use variables such as VX_AGENT_MODEL_VX_ENG_TEST_1_0_0 and VX_AGENT_MODEL_VX_ENG_TEST_1_1_0. Use build_from_env() from vx_agents_fabric.providers, then inject its agent_adapters and mind_adapters into EngineeringOrchestrator. The factory makes no network call itself; provider calls occur only on dispatch.
 
 This adapter supplies chat inference, not web search, repository access or code execution. Those must be separately connected and sandboxed. Returned evidence references are accepted only when exact matches exist in the supplied context or prior artifact evidence. If sources or adapters are absent, the workflow must remain HOLD.
+
+
+Downstream specialist tasks and the Ω Parent reviewers receive the **content** of allowed prior artifacts, not just artifact IDs and hashes. The orchestrator filters the artifact set by declared input families before sharing it, and records the same lineage and evidence references. This preserves actual handoff utility while preventing indiscriminate broadcast across agent families.

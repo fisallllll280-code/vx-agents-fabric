@@ -147,7 +147,8 @@ class EngineeringOrchestrator:
                     "prior_artifacts": [
                         {"artifact_id": a.artifact_id, "kind": a.kind, "status": a.status,
                          "source_agent": a.source_agent, "source_version": a.source_version,
-                         "sha256": a.sha256, "evidence_refs": list(a.evidence_refs)}
+                         "sha256": a.sha256, "evidence_refs": list(a.evidence_refs),
+                         "limitations": list(a.limitations), "content": dict(a.content)}
                         for a in visible_artifacts
                     ],
                     "stage": stage, "required_output": spec.outputs,
@@ -216,7 +217,8 @@ class EngineeringOrchestrator:
             "artifacts": [
                 {"artifact_id": a.artifact_id, "kind": a.kind, "status": a.status,
                  "sha256": a.sha256, "source_agent": a.source_agent,
-                 "evidence_refs": list(a.evidence_refs), "limitations": list(a.limitations)}
+                 "evidence_refs": list(a.evidence_refs), "limitations": list(a.limitations),
+                 "content": dict(a.content)}
                 for a in report.artifacts
             ],
             "decision_rule": "hard_gates_and_missing_evidence_cannot_be_outvoted",

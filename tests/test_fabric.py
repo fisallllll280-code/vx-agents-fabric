@@ -72,11 +72,13 @@ class SafetyAndLineageTests(unittest.TestCase):
     def test_configured_agent_and_mind_adapters_produce_governance_candidate_only(self):
         registry = default_registry()
         observed_context = {}
+        observed_mind_context = {}
         def agent_adapter(envelope):
             observed_context[envelope.agent.role_id] = {
                 "context": dict(envelope.payload["context"]),
                 "visible_families": tuple(envelope.payload["visible_input_families"]),
                 "prior_sources": tuple(item["source_agent"] for item in envelope.payload["prior_artifacts"]),
+                "prior_contents": tuple(item["content"] for item in envelope.payload["prior_artifacts"]),
             }
             return {
                 "artifact_id": envelope.task_id + ":artifact",
@@ -87,12 +89,15 @@ class SafetyAndLineageTests(unittest.TestCase):
             }
         agent_adapters = {spec.role_id: agent_adapter for spec in registry.all_agents()}
         def make_mind_adapter(mind_id):
-            return lambda context: {
-                "status": "PASS",
-                "rationale": ["independent fixture review only"],
-                "evidence_refs": ["fixture://mind-review/" + mind_id],
-                "hard_gate_failures": [],
-            }
+            def review(context):
+                observed_mind_context[mind_id] = context
+                return {
+                    "status": "PASS",
+                    "rationale": ["independent fixture review only"],
+                    "evidence_refs": ["fixture://mind-review/" + mind_id],
+                    "hard_gate_failures": [],
+                }
+            return review
         mind_adapters = {mind_id: make_mind_adapter(mind_id) for mind_id in registry.minds}
         orchestrator = EngineeringOrchestrator(
             registry, agent_adapters, mind_adapters, version_pins={"VX-ENG-TEST": "1.0.0"}
@@ -114,6 +119,10 @@ class SafetyAndLineageTests(unittest.TestCase):
         self.assertIn("finance", observed_context["VX-ENG-ARCH"]["context"])
         self.assertNotIn("finance", observed_context["VX-RES-SOURCE"]["visible_families"])
         self.assertNotIn("VX-ENG-COORD", observed_context["VX-FIN-RISK"]["prior_sources"])
+        self.assertTrue(observed_context["VX-FIN-RISK"]["prior_contents"])
+        self.assertTrue(all("goal" in item for item in observed_context["VX-FIN-RISK"]["prior_contents"]))
+        self.assertTrue(observed_mind_context)
+        self.assertTrue(all("content" in item for item in observed_mind_context["MIND-PROOF"]["artifacts"]))
         test_result = next(item for item in report.results if item.agent_id == "VX-ENG-TEST")
         self.assertEqual(test_result.agent_version, "1.0.0")
         self.assertEqual(len(report.mind_reviews), len(registry.minds))
