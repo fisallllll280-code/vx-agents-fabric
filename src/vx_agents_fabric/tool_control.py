@@ -122,6 +122,7 @@ class VXToolControlGate:
         cumulative_input_bytes: int,
         elapsed_seconds: float,
         idempotency_key: str,
+        action_context: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Return a decision record; never calls a tool handler."""
         now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -138,16 +139,24 @@ class VXToolControlGate:
         else:
             input_error = False
         input_sha256 = hashlib.sha256(raw).hexdigest()
-        action_id = "VX-ACT-" + hashlib.sha256(
+        fallback_action_id = "VX-ACT-" + hashlib.sha256(
             f"{role_id}@{role_version}|{tool_id}|{attempted_calls}|{input_sha256}".encode("utf-8")
         ).hexdigest()[:20]
+        action_id = str(action_context.get("action_id")) if action_context else fallback_action_id
 
         decision = "ALLOW"
         reason = "within_bound_vx_tool_policy"
         scope = str(getattr(policy, "authority_scope", ""))
         authority = AUTHORITY_BY_SCOPE.get(scope, "NONE")
 
-        if self._emergency_stop:
+        if action_context and (
+            action_context.get("input_sha256") != input_sha256
+            or action_context.get("policy_digest") != policy_digest
+            or action_context.get("tool_id") != tool_id
+            or action_context.get("scope") != scope
+        ):
+            decision, reason = "REJECT", "action_context_mismatch"
+        elif self._emergency_stop:
             decision, reason = "REJECT", "emergency_stop_active:" + self._emergency_reason
         elif input_error:
             decision, reason = "REJECT", "arguments_not_json_serializable"
@@ -198,6 +207,7 @@ class VXToolControlGate:
             "scope": scope,
             "effective_authority": authority if decision == "ALLOW" else "NONE",
             "policy_digest": policy_digest,
+            "action_digest": action_context.get("action_digest") if action_context else None,
             "input_sha256": input_sha256,
             "input_bytes": len(raw),
             "idempotency_key": idempotency_key,
@@ -221,6 +231,7 @@ class VXToolControlGate:
             "scope": decision.get("scope"),
             "effective_authority": decision.get("effective_authority", "NONE"),
             "policy_digest": decision.get("policy_digest"),
+            "action_digest": decision.get("action_digest"),
             "input_sha256": decision.get("input_sha256"),
             "input_bytes": decision.get("input_bytes"),
             "idempotency_key": decision.get("idempotency_key"),
