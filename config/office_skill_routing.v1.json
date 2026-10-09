@@ -124,6 +124,37 @@
   ],
   "phase_routes": [
     {
+      "phase": "UIUX_DESIGN_SYSTEM",
+      "skills": [
+        "brainstorming"
+      ],
+      "design_engine": "UI_UX_PRO_MAX",
+      "role_ids": [
+        "VX-ENG-REQ",
+        "VX-ENG-ARCH",
+        "VX-ENG-INNOV",
+        "VX-ENG-TEST",
+        "MIND-SYS-ARCH",
+        "MIND-RESEARCH"
+      ],
+      "required_artifacts": [
+        "product_and_user_brief",
+        "stack_and_platform",
+        "design_system_candidate",
+        "design_tokens",
+        "component_and_layout_guidance",
+        "accessibility_review",
+        "responsive_states",
+        "anti_pattern_review",
+        "source_and_version_manifest",
+        "approved_master_and_page_overrides"
+      ],
+      "gate": "DESIGN_SYSTEM_REVIEW_BEFORE_CANONICAL_PERSISTENCE",
+      "write_scope": "proposal",
+      "canonical_persist_requires_approval": true,
+      "unknown_skill_action": "HOLD"
+    },
+    {
       "phase": "MEDIA_PROMPT_DESIGN",
       "provider": "HIGGSFIELD",
       "skills": [
@@ -550,5 +581,47 @@
       "Do not auto-top-up, publish, distribute, merge or adopt generated assets into canonical authority records.",
       "Separate technical artifact verification from aesthetic review and user acceptance."
     ]
-  }
+  },
+  "design_intelligence_integrations": [
+    {
+      "integration_id": "UI_UX_PRO_MAX",
+      "canonical_name": "UI/UX Pro Max",
+      "upstream_repository": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill",
+      "upstream_skill_manifest": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/blob/main/skill.json",
+      "upstream_version_observed": "2.13.0",
+      "integration_type": "agent-host skill plus local design-system generator",
+      "supported_platforms": [
+        "claude",
+        "cursor",
+        "windsurf",
+        "copilot",
+        "codex",
+        "gemini",
+        "opencode"
+      ],
+      "installed_status": "NOT_VERIFIED",
+      "local_generation_status": "NOT_VERIFIED",
+      "intended_office": "Ω.DESIGN",
+      "intended_use": [
+        "generate a product-specific design-system candidate",
+        "recommend layout patterns and UI component hierarchy",
+        "select accessible colors and typography with documented rationale",
+        "generate platform-specific implementation guidance",
+        "run UI/UX anti-pattern and responsive-design checks"
+      ],
+      "install_for_claude_code": [
+        "/plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill",
+        "/plugin install ui-ux-pro-max@ui-ux-pro-max-skill"
+      ],
+      "optional_cli": "npx ui-ux-pro-max-cli init --ai claude",
+      "governance_constraints": [
+        "Pin and verify installed version before evaluation.",
+        "Treat generated design systems as proposals until accessibility, responsive behaviour, implementation and user requirements are reviewed.",
+        "Persist an approved global system as MASTER and page-specific differences as overrides only after canonical governance approval.",
+        "Do not silently overwrite existing brand tokens, canonical UI contracts or prior design decisions.",
+        "Do not treat the skill's own pre-delivery checks as independent ARC-X assurance.",
+        "Do not claim skill execution unless its actual host invocation and output are available."
+      ]
+    }
+  ]
 }
