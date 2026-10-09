@@ -6,6 +6,8 @@ import json
 import unittest
 
 from vx_agents_fabric.engineering_tools import (
+    BoundEngineeringToolDispatcher,
+    ToolAccessPolicy,
     GitHubReadOnlyAdapter,
     build_engineering_tool_hub,
     convert_units,
@@ -146,6 +148,46 @@ class GitHubAdapterTests(unittest.TestCase):
     def test_non_tls_public_endpoint_rejected(self):
         with self.assertRaisesRegex(ValueError, "must_use_https"):
             GitHubReadOnlyAdapter(api_base_url="http://api.github.com")
+
+
+class BoundDispatcherTests(unittest.TestCase):
+    def setUp(self):
+        self.hub = build_engineering_tool_hub(environ={})
+
+    def test_dispatcher_binds_role_and_capabilities_outside_the_model(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-TEST", role_version="1.0.0",
+            caller_family="engineering", authority_scope="analysis",
+            capabilities=("math_evaluation",),
+            allowed_tool_ids=("math.evaluate",),
+        )
+        dispatcher = BoundEngineeringToolDispatcher(self.hub, policy)
+        result = dispatcher.invoke("math.evaluate", {"expression": "3*7"})
+        self.assertEqual(result.status, "COMPLETED")
+        self.assertEqual(result.result["value"], 21.0)
+
+    def test_dispatcher_blocks_tools_not_allowlisted_for_role(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-TEST", role_version="1.0.0",
+            caller_family="engineering", authority_scope="analysis",
+            capabilities=("math_evaluation",),
+            allowed_tool_ids=("math.evaluate",),
+        )
+        result = BoundEngineeringToolDispatcher(self.hub, policy).invoke(
+            "engineering.solver.submit", {"solver": "openfoam", "job": {}})
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertEqual(result.error_code, "tool_not_in_role_allowlist")
+
+    def test_approval_is_pinned_in_host_policy(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-BUILD", role_version="1.0.0",
+            caller_family="engineering", authority_scope="sandbox",
+            capabilities=(), allowed_tool_ids=("sandbox.execute_python",),
+        )
+        result = BoundEngineeringToolDispatcher(self.hub, policy).invoke(
+            "sandbox.execute_python", {"code": "print(3)"})
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertEqual(result.error_code, "explicit_approval_required")
 
 
 if __name__ == "__main__":
