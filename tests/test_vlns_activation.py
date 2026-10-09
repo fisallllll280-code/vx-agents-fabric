@@ -194,7 +194,7 @@ class VLNSActivationGateTests(unittest.TestCase):
     def test_local_vx_evidence_journal_is_hash_linked_and_idempotent(self):
         event = {
             "event_type": "VLNS_MODEL_ACTIVATION_CONFIRMED",
-            "activation_id": "VLNS-ACT-a" * 1,
+            "activation_id": "VLNS-ACT-" + "a" * 24,
             "envelope_hash": "a" * 64,
             "provider": "openai-compatible",
             "model_id": "model-x",
