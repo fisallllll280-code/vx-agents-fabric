@@ -435,19 +435,19 @@ def build_engineering_tool_hub(*, environ: Mapping[str, str] | None = None,
                           ("analysis", "research", "verification"), required_capabilities=("unit_conversion",)),
                  lambda args: {"value": convert_units(args.get("value"), args.get("from_unit"), args.get("to_unit")),
                                "from_unit": args.get("from_unit"), "to_unit": args.get("to_unit")})
-    github = GitHubReadOnlyAdapter(token=env.get("VX_GITHUB_TOKEN"),
+    github = GitHubReadOnlyAdapter(token=env.get("VX_GITHUB_TOKEN", ""),
                                    api_base_url=env.get("VX_GITHUB_API_BASE_URL", "https://api.github.com"),
                                    open_url=open_url)
     hub.register(ToolSpec("github.fetch_file", "1.0.0", "Fetch a UTF-8 GitHub file read-only with blob SHA and source URL.",
                           ("read-only", "research", "analysis", "verification"), max_input_bytes=10_000),
                  github.fetch_file)
-    sandbox = RemoteSandboxAdapter(endpoint=env.get("VX_SANDBOX_ENDPOINT"), token=env.get("VX_SANDBOX_TOKEN"),
+    sandbox = RemoteSandboxAdapter(endpoint=env.get("VX_SANDBOX_ENDPOINT", ""), token=env.get("VX_SANDBOX_TOKEN", ""),
                                    open_url=open_url)
     hub.register(ToolSpec("sandbox.execute_python", "1.0.0", "Request bounded Python execution through a configured sandbox gateway.",
                           ("sandbox",), allowed_families=("engineering", "governance"),
                           requires_explicit_approval=True, max_input_bytes=70_000), sandbox.execute_python)
-    solver = EngineeringSolverGateway(endpoint=env.get("VX_ENGINEERING_SOLVER_GATEWAY"),
-                                      token=env.get("VX_ENGINEERING_SOLVER_TOKEN"), open_url=open_url)
+    solver = EngineeringSolverGateway(endpoint=env.get("VX_ENGINEERING_SOLVER_GATEWAY", ""),
+                                      token=env.get("VX_ENGINEERING_SOLVER_TOKEN", ""), open_url=open_url)
     hub.register(ToolSpec("engineering.solver.submit", "1.0.0", "Submit a job to a configured CAD/CAE/CFD solver gateway.",
                           ("sandbox", "sandbox-write"), allowed_families=("engineering", "governance"),
                           requires_explicit_approval=True, max_input_bytes=520_000), solver.submit)
