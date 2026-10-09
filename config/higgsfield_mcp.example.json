@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "higgsfield": {
+      "type": "http",
+      "url": "https://mcp.higgsfield.ai/mcp"
+    }
+  },
+  "_notes": [
+    "Example for Claude Code project-level .mcp.json only; do not assume this format applies to Claude Desktop or another MCP host.",
+    "Use only the official Higgsfield MCP endpoint.",
+    "Connection and available tool names must be verified in the actual host.",
+    "Never put credentials in this file unless the host's documented auth flow explicitly requires it; prefer the provider's official auth flow or a secrets manager.",
+    "Paid media generation requires a user-approved cost ceiling before submission."
+  ]
+}
