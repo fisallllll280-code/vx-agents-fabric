@@ -102,12 +102,20 @@ class EngineeringOrchestrator:
                  adapters: Mapping[str, AgentAdapter] | None = None,
                  mind_adapters: Mapping[str, MindAdapter] | None = None,
                  version_pins: Mapping[str, str] | None = None,
-                 ledger: IntegrityLedger | None = None) -> None:
+                 ledger: IntegrityLedger | None = None,
+                 artifact_archive: ArtifactArchive | None = None,
+                 failure_memory: FailureMemory | None = None) -> None:
         self.registry = registry or default_registry()
         self.adapters = dict(adapters or {})
         self.mind_adapters = dict(mind_adapters or {})
         self.version_pins = dict(version_pins or {})
-        self.ledger = ledger or IntegrityLedger()
+        self.ledger = ledger or IntegrityLedger(os.environ.get("VX_EVENT_LEDGER_PATH") or None)
+        self.artifact_archive = artifact_archive or ArtifactArchive(
+            os.environ.get("VX_ARTIFACT_ARCHIVE_PATH") or None
+        )
+        self.failure_memory = failure_memory or FailureMemory(
+            os.environ.get("VX_FAILURE_MEMORY_PATH") or None
+        )
         self.boundary = VXExecutionBoundary()
 
     def run(self, goal: str, *, workflow_id: str = "WF-ENGINEERING-001",
@@ -144,6 +152,7 @@ class EngineeringOrchestrator:
                 task_payload = {
                     "goal": goal, "context": scoped_context,
                     "visible_input_families": sorted(allowed_families),
+                    "historical_failure_patterns": list(self.failure_memory.lookup(role_id, stage)),
                     "prior_artifacts": [
                         {"artifact_id": a.artifact_id, "kind": a.kind, "status": a.status,
                          "source_agent": a.source_agent, "source_version": a.source_version,
@@ -164,6 +173,7 @@ class EngineeringOrchestrator:
                     result = AgentRunResult(task_id, role_id, spec.version, stage, "BLOCKED", None,
                                             "AUTHORITY_DENIED", reason)
                     report.results.append(result)
+                    self.failure_memory.observe(workflow_id, result)
                     self.ledger.append(workflow_id, "AGENT_BLOCKED", task_id, asdict(result))
                     continue
 
@@ -198,6 +208,7 @@ class EngineeringOrchestrator:
                     if tuple(artifact.input_artifact_ids) != inputs:
                         raise ValueError("artifact_input_lineage_mismatch")
                     artifact = artifact.with_digest()
+                    self.artifact_archive.store(workflow_id, artifact)
                     report.artifacts.append(artifact)
                     result = AgentRunResult(task_id, role_id, spec.version, stage, artifact.status, artifact.artifact_id)
                     self.ledger.append(workflow_id, "ARTIFACT_RECORDED", artifact.artifact_id, {
@@ -207,6 +218,7 @@ class EngineeringOrchestrator:
                 except Exception as exc:
                     result = AgentRunResult(task_id, role_id, spec.version, stage, "FAIL", None,
                                             "AGENT_EXECUTION_ERROR", type(exc).__name__ + ":" + str(exc))
+                    self.failure_memory.observe(workflow_id, result)
                     self.ledger.append(workflow_id, "AGENT_FAILED", task_id, asdict(result))
                 report.results.append(result)
 
@@ -226,6 +238,9 @@ class EngineeringOrchestrator:
         expected_minds = tuple(sorted(self.registry.minds))
         for mind_id in expected_minds:
             adapter = self.mind_adapters.get(mind_id)
+            mind_context["historical_failure_patterns"] = list(
+                self.failure_memory.lookup("MIND:" + mind_id, "PARENT_REVIEW")
+            )
             if adapter is None:
                 report.missing_adapters.append(mind_id)
                 review = MindReview(mind_id, "NOT_CONFIGURED", ("mind_adapter_not_connected",), (), (),
@@ -254,6 +269,14 @@ class EngineeringOrchestrator:
                 review = MindReview(mind_id, "FAIL", ("mind_execution_error:" + type(exc).__name__,), (), (),
                                     content_hash({"mind_id": mind_id, "error": type(exc).__name__, "message": str(exc)}))
                 report.mind_reviews.append(review)
+                failure_result = AgentRunResult(
+                    task_id=f"{workflow_id}:PARENT_REVIEW:{mind_id}",
+                    agent_id="MIND:" + mind_id, agent_version="unbound",
+                    stage="PARENT_REVIEW", status="FAIL", artifact_id=None,
+                    error_code="MIND_EXECUTION_ERROR",
+                    message="Mind review raised " + type(exc).__name__,
+                )
+                self.failure_memory.observe(workflow_id, failure_result)
                 self.ledger.append(workflow_id, "MIND_REVIEW_FAILED", mind_id, asdict(review))
 
         report.decision = EngineeringDecisionEngine.decide(

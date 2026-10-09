@@ -70,3 +70,14 @@ This adapter supplies chat inference, not web search, repository access or code 
 
 
 Downstream specialist tasks and the Ω Parent reviewers receive the **content** of allowed prior artifacts, not just artifact IDs and hashes. The orchestrator filters the artifact set by declared input families before sharing it, and records the same lineage and evidence references. This preserves actual handoff utility while preventing indiscriminate broadcast across agent families.
+
+
+## Durable operations and failure memory
+
+Optional environment variables enable fsync-backed JSONL stores:
+
+- \`VX_EVENT_LEDGER_PATH\`: append-only hash chain that preserves full event payloads. Tampered data blocks startup instead of being silently accepted.
+- \`VX_ARTIFACT_ARCHIVE_PATH\`: keeps complete artifact content, source/version, input lineage, evidence references and digest. Conflicting artifact-ID reuse is rejected.
+- \`VX_FAILURE_MEMORY_PATH\`: records compact failed/blocked task patterns and remediation lessons. Matching history is passed to later attempts for that agent and stage.
+
+When paths are unset, stores remain in memory for local tests. Persistent journals may contain workflow and artifact content; restrict filesystem access and retention. Do not pass secrets as agent context. Failure memory is retrieval of prior operational incidents, not model-weight retraining. Durable event/artifact storage supports replay inspection; fully automatic resumption after a crash still requires a dedicated checkpoint/replay controller and VAIXLNS operational-admission proof.
