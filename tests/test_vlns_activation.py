@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -12,6 +14,7 @@ from vx_agents_fabric.vlns_activation import (
     VLNSGateConfig,
     VLNSGuardedAgentAdapter,
     VLNSGuardedMindAdapter,
+    VXActivationEvidenceJournal,
 )
 
 
@@ -62,7 +65,7 @@ def config(*, base_url="https://vlns.example", capabilities=("engineering", "cod
         required=True,
         base_url=base_url,
         activation_path="/v1/activations",
-        event_path="/events",
+        evidence_path=":memory:",
         token="test-token",
         signing_key=KEY,
         provider="openai-compatible",
@@ -86,7 +89,7 @@ class VLNSActivationGateTests(unittest.TestCase):
         self.assertIn("NOT_CONFIGURED", result.limitations)
         self.assertEqual(calls, [])
 
-    def test_remote_receipt_and_event_ack_gate_model_inference(self):
+    def test_remote_receipt_and_local_ledger_gate_model_inference(self):
         calls = []
 
         def opener(request, timeout):
@@ -97,9 +100,7 @@ class VLNSActivationGateTests(unittest.TestCase):
                     "activation_id": envelope["activation_id"],
                     "envelope_hash": content_hash(envelope),
                 }).encode("utf-8"))
-            if request.full_url.endswith("/events"):
-                return FakeResponse(b'{"recorded":true}')
-            raise AssertionError("unexpected endpoint: " + request.full_url)
+            raise AssertionError("VLNS server must not receive local VX evidence events: " + request.full_url)
 
         inner = lambda _: calls.append("model-called") or Artifact(
             artifact_id="a", kind="architecture_report", status="PROPOSED",
@@ -188,6 +189,30 @@ class VLNSActivationGateTests(unittest.TestCase):
         self.assertEqual(calls, [])
         self.assertTrue(result["hard_gate_failures"][0].startswith("VLNS_ACTIVATION_"))
 
+
+
+    def test_local_vx_evidence_journal_is_hash_linked_and_idempotent(self):
+        event = {
+            "event_type": "VLNS_MODEL_ACTIVATION_CONFIRMED",
+            "activation_id": "VLNS-ACT-a" * 1,
+            "envelope_hash": "a" * 64,
+            "provider": "openai-compatible",
+            "model_id": "model-x",
+            "model_version": "model-x:rev-1",
+            "role": "engineering_mind",
+            "context_hash": "b" * 64,
+            "provenance": {"task_id": "task-001", "source_id": "src-001", "source_digest": "c" * 64},
+            "evidence_status": "REMOTE_RECEIPT_VALIDATED",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            journal = VXActivationEvidenceJournal(os.path.join(tmp, "activation-events.sqlite3"))
+            first = journal.record(event)
+            second = journal.record(event)
+            self.assertTrue(first["ok"])
+            self.assertEqual(first["status"], "LOCAL_VX_EVENT_RECORDED")
+            self.assertTrue(second["ok"])
+            self.assertEqual(second["status"], "LOCAL_VX_EVENT_ALREADY_RECORDED")
+            self.assertTrue(journal.verify_integrity())
 
     def test_factory_wraps_configured_agents_when_gate_is_required(self):
         registry = AgentRegistry()
