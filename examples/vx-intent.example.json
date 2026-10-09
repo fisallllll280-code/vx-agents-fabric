@@ -1,0 +1,16 @@
+{
+  "intent_id": "VX-INTENT-EXAMPLE-001",
+  "goal": "Describe a bounded engineering task for analysis only",
+  "requested_operation": "ANALYZE",
+  "authority_scope": "read-only",
+  "evidence_policy": {
+    "preserve_source_hash": true,
+    "require_reproducible_tests_before_verified": true
+  },
+  "effects": {
+    "execute_code": false,
+    "mutate_canonical_state": false,
+    "publish": false
+  },
+  "status": "EXAMPLE_NOT_CANONICAL"
+}

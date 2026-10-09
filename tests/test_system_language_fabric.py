@@ -29,6 +29,12 @@ class SystemLanguageFabricTests(unittest.TestCase):
         self.assertEqual(self.document["assurance_gate"], "ARC-X")
         self.assertGreaterEqual(len(self.fabric.languages()), 6)
 
+    def test_repository_intent_example_passes_structural_analysis(self) -> None:
+        example = ROOT / "examples" / "vx-intent.example.json"
+        result = self.fabric.analyze("vx.intent-json", example.read_text(encoding="utf-8"))
+        self.assertEqual(result["status"], "PARSE_PASS")
+        self.assertEqual(result["proof_level"], "SYNTAX_ONLY")
+
     def test_unknown_canonical_grammar_is_not_invented(self) -> None:
         genome = self.fabric.resolve("vaixl.project-genome")
         self.assertIsNone(genome.parser_adapter)

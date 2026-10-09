@@ -53,7 +53,7 @@ Local command examples:
 ~~~bash
 PYTHONPATH=src python -m vx_agents_fabric.system_language_fabric --config config/system_language_registry.v1.json --list
 
-PYTHONPATH=src python -m vx_agents_fabric.system_language_fabric --config config/system_language_registry.v1.json --analyze-language vx.intent-json --source-file examples/intent.json
+PYTHONPATH=src python -m vx_agents_fabric.system_language_fabric --config config/system_language_registry.v1.json --analyze-language vx.intent-json --source-file examples/vx-intent.example.json
 ~~~
 
 Use an example file whose root contains **intent_id** and **goal** for the second command. The command's successful exit means the bounded syntax/structural check passed; it does not mean the language is semantically correct or the system is operational.
