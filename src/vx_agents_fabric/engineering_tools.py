@@ -16,6 +16,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Mapping
 
 from .tool_control import VXToolControlGate
+from .registry import AgentRegistry
 
 JSONMap = dict[str, Any]
 OpenUrl = Callable[..., Any]
@@ -566,3 +567,46 @@ class BoundEngineeringToolDispatcher:
             result.evidence, control_decision,
         )
 
+
+
+def bind_registered_agent_tool_dispatcher(
+    hub: EngineeringToolHub,
+    registry: AgentRegistry,
+    role_id: str,
+    *,
+    role_version: str | None = None,
+    allowed_tool_ids: tuple[str, ...] = (),
+    explicitly_approved_tool_ids: tuple[str, ...] = (),
+    max_tool_calls: int = 64,
+    max_total_input_bytes: int = 1_000_000,
+    max_input_bytes_per_call: int = 1_000_000,
+    max_elapsed_seconds: float = 300.0,
+) -> BoundEngineeringToolDispatcher:
+    """Create a VX-bound dispatcher only from an admitted, versioned registry role.
+
+    Registry entries marked DESIGN_ONLY or otherwise not admitted cannot receive tool
+    access. All allowlists and budgets are host-side configuration, never model output.
+    """
+    spec = registry.resolve(role_id, role_version)
+    if spec.admission_status not in {"ADMITTED", "VERIFIED", "OPERATIONALLY_FINAL"}:
+        raise PermissionError("agent_not_admitted_for_tool_access:" + spec.key)
+    registered_tool_ids = set(hub._specs)
+    unknown_tools = set(allowed_tool_ids) - registered_tool_ids
+    if unknown_tools:
+        raise ValueError("tool_allowlist_contains_unregistered_tools:" + ",".join(sorted(unknown_tools)))
+    if not set(explicitly_approved_tool_ids).issubset(set(allowed_tool_ids)):
+        raise ValueError("approved_tools_must_be_in_role_allowlist")
+    policy = ToolAccessPolicy(
+        role_id=spec.role_id,
+        role_version=spec.version,
+        caller_family=spec.family,
+        authority_scope=spec.authority_scope,
+        capabilities=tuple(spec.capabilities),
+        allowed_tool_ids=tuple(allowed_tool_ids),
+        explicitly_approved_tool_ids=tuple(explicitly_approved_tool_ids),
+        max_tool_calls=max_tool_calls,
+        max_total_input_bytes=max_total_input_bytes,
+        max_input_bytes_per_call=max_input_bytes_per_call,
+        max_elapsed_seconds=max_elapsed_seconds,
+    )
+    return BoundEngineeringToolDispatcher(hub, policy)
