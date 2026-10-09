@@ -95,6 +95,43 @@ class OfficeSkillRoutingTests(unittest.TestCase):
         self.assertEqual(routes["VISUAL_RESEARCH"]["write_scope"], "none")
         self.assertIn("abstract_pattern_matrix", routes["VISUAL_RESEARCH"]["required_artifacts"])
 
+    def test_higgsfield_is_declared_as_official_remote_mcp_but_not_live_verified(self):
+        provider = self.config["media_generation_provider"]
+        self.assertEqual(provider["canonical_name"], "Higgsfield")
+        self.assertIn("Xfield", provider["accepted_aliases"])
+        self.assertEqual(provider["official_mcp_endpoint"], "https://mcp.higgsfield.ai/mcp")
+        self.assertEqual(provider["connection_status"], "NOT_VERIFIED")
+        self.assertEqual(provider["tool_discovery_status"], "NOT_VERIFIED")
+        self.assertIn("text-to-image", provider["capabilities_intents"])
+        self.assertIn("image-to-video", provider["capabilities_intents"])
+
+    def test_media_routes_have_cost_rights_and_acceptance_gates(self):
+        routes = {item["phase"]: item for item in self.config["phase_routes"]}
+        self.assertIn("Ω.MEDIA", {item["office_id"] for item in self.config["offices"]})
+        self.assertEqual(
+            routes["MEDIA_COST_AND_APPROVAL"]["on_unknown_cost"], "HOLD_COST_UNKNOWN"
+        )
+        self.assertFalse(routes["MEDIA_COST_AND_APPROVAL"]["auto_top_up"])
+        self.assertEqual(
+            routes["IMAGE_GENERATION"]["gate"],
+            "CONNECTED_TOOL_AND_APPROVED_COST_CEILING_REQUIRED",
+        )
+        self.assertFalse(routes["IMAGE_GENERATION"]["auto_publish"])
+        self.assertFalse(routes["VIDEO_GENERATION"]["auto_publish"])
+        self.assertFalse(routes["MEDIA_REVIEW_AND_LEARNING"]["auto_canonical_adoption"])
+        self.assertIn("asset_sha256", routes["IMAGE_GENERATION"]["required_artifacts"])
+        self.assertIn("playback_and_motion_review", routes["VIDEO_GENERATION"]["required_artifacts"])
+
+    def test_higgsfield_example_config_uses_the_official_remote_endpoint(self):
+        example_path = ROOT / "config" / "higgsfield_mcp.example.json"
+        example = json.loads(example_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            example["mcpServers"]["higgsfield"]["url"],
+            "https://mcp.higgsfield.ai/mcp",
+        )
+        self.assertEqual(example["mcpServers"]["higgsfield"]["type"], "http")
+        self.assertEqual(set(example.keys()), {"mcpServers"})
+
 
 if __name__ == "__main__":
     unittest.main()
