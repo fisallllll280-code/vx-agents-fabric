@@ -1,0 +1,20 @@
+# Local environment secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Private integration runtime evidence; generate only on trusted deployment hosts
+runtime/integration-attestations/*.json
+!runtime/integration-attestations/*.example.json
+
+# Local reports and generated artifacts
+reports/
+.coverage
+__pycache__/
+*.py[cod]
+.venv/
+venv/
