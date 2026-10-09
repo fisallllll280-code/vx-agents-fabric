@@ -47,7 +47,7 @@ The endpoint accepts POST JSON containing solver, job (a JSON object), and reque
 
 ## Using the hub from a specialist adapter
 
-Call build_engineering_tool_hub() at adapter startup. Invoke a tool only with the registered caller family, exact capability set, and current authority scope. Preserve ToolEvidence alongside the produced artifact and attach the result to the VX workflow lineage. Tool outputs must be independently checked where correctness matters; source hashes alone are not verification. The existing EngineeringOrchestrator remains responsible for workflow lineage and failures, while VAIXLNS retains canonical governance/admission.
+Call build_engineering_tool_hub() at adapter startup, then create a BoundEngineeringToolDispatcher from a host-constructed ToolAccessPolicy pinned to role_id, role_version, caller family, authority scope, capabilities, tool allowlist, and pre-approved tool IDs. Never allow the model to provide or alter that policy. Invoke tools through the bound dispatcher, preserve ToolEvidence alongside the produced artifact, and attach the result to the VX workflow lineage. Tool outputs must be independently checked where correctness matters; source hashes alone are not verification. The existing EngineeringOrchestrator remains responsible for workflow lineage and failures, while VAIXLNS retains canonical governance/admission.
 
 ## Verification
 
