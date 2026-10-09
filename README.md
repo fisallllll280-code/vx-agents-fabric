@@ -66,3 +66,11 @@ To preserve operations across process restarts, configure protected local paths:
     VX_FAILURE_MEMORY_PATH=/var/lib/vx-agents/failures.jsonl
 
 The command returns exit code 0 only when it produces a candidate eligible for separate VAIXLNS governance review; 2 means HOLD/incomplete evidence or missing adapters, 3 means REJECT, and 4 means a local configuration/input error. A zero exit code is **not** production-release approval. A chat model connection alone does not provide web search, GitHub repository access or a code-execution sandbox; configure and validate those adapters separately.
+
+## Engineering tool integrations
+
+- [Governed engineering tool adapters](docs/engineering_tool_integrations.md)
+- Runtime module: `src/vx_agents_fabric/engineering_tools.py`
+- Tool IDs: `math.evaluate`, `math.solve_linear_system`, `engineering.convert_units`, `github.fetch_file`, `sandbox.execute_python`, `engineering.solver.submit`
+- Local math tools are executable immediately; GitHub is read-only; sandbox and solver gateways remain `NOT_CONFIGURED` unless explicitly bound.
+- Unit tests: `PYTHONPATH=src python -m unittest discover -s tests -v`
