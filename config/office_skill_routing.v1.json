@@ -105,9 +105,154 @@
       ],
       "default_scope": "read-only",
       "purpose": "Discover permitted visual references, compare user experience patterns, extract abstract and attributed design principles, and create original designs validated against product requirements, accessibility, usability and implementation constraints."
+    },
+    {
+      "office_id": "Ω.MEDIA",
+      "name": "Creative Media Generation Office",
+      "role_ids": [
+        "VX-ENG-REQ",
+        "VX-ENG-ARCH",
+        "VX-ENG-INNOV",
+        "VX-ENG-TEST",
+        "VX-ENG-LEARN",
+        "MIND-SYS-ARCH",
+        "MIND-RESEARCH"
+      ],
+      "default_scope": "planning",
+      "purpose": "Compose and version image/video briefs, route approved requests through the verified official Higgsfield MCP, enforce cost and rights gates, inspect outputs and learn from scored outcomes."
     }
   ],
   "phase_routes": [
+    {
+      "phase": "MEDIA_PROMPT_DESIGN",
+      "provider": "HIGGSFIELD",
+      "skills": [
+        "brainstorming",
+        "writing-plans"
+      ],
+      "role_ids": [
+        "VX-ENG-REQ",
+        "VX-ENG-ARCH",
+        "VX-ENG-INNOV",
+        "MIND-SYS-ARCH"
+      ],
+      "required_artifacts": [
+        "creative_brief",
+        "target_audience_and_use",
+        "image_or_video_type",
+        "shot_or_frame_plan",
+        "prompt_variants",
+        "acceptance_scorecard",
+        "rights_and_source_manifest"
+      ],
+      "gate": "BRIEF_AND_RIGHTS_REVIEW",
+      "write_scope": "none"
+    },
+    {
+      "phase": "MEDIA_COST_AND_APPROVAL",
+      "provider": "HIGGSFIELD",
+      "skills": [
+        "writing-plans"
+      ],
+      "role_ids": [
+        "VX-ENG-COORD",
+        "VX-ENG-OPS",
+        "MIND-RESEARCH"
+      ],
+      "required_artifacts": [
+        "actual_available_tool_and_model",
+        "quantity",
+        "resolution_or_duration",
+        "provider_price_or_credit_quote",
+        "user_approved_cost_ceiling",
+        "approval_ref"
+      ],
+      "gate": "PAID_GENERATION_REQUIRES_EXPLICIT_USER_APPROVAL",
+      "write_scope": "decision-proposal",
+      "on_unknown_cost": "HOLD_COST_UNKNOWN",
+      "auto_top_up": false
+    },
+    {
+      "phase": "IMAGE_GENERATION",
+      "provider": "HIGGSFIELD",
+      "skills": [
+        "executing-plans"
+      ],
+      "role_ids": [
+        "VX-ENG-BUILD",
+        "VX-ENG-TEST"
+      ],
+      "required_artifacts": [
+        "approved_prompt_hash",
+        "provider_tool_name",
+        "model_id",
+        "request_id",
+        "generation_settings",
+        "actual_cost_if_available",
+        "asset_ref",
+        "asset_sha256",
+        "technical_validation"
+      ],
+      "gate": "CONNECTED_TOOL_AND_APPROVED_COST_CEILING_REQUIRED",
+      "write_scope": "paid-generation-with-user-approval",
+      "auto_publish": false
+    },
+    {
+      "phase": "VIDEO_GENERATION",
+      "provider": "HIGGSFIELD",
+      "skills": [
+        "executing-plans"
+      ],
+      "role_ids": [
+        "VX-ENG-BUILD",
+        "VX-ENG-TEST",
+        "VX-ENG-RED"
+      ],
+      "required_artifacts": [
+        "approved_prompt_hash",
+        "shot_list",
+        "continuity_constraints",
+        "provider_tool_name",
+        "model_id",
+        "duration",
+        "resolution",
+        "request_id",
+        "actual_cost_if_available",
+        "asset_ref",
+        "asset_sha256",
+        "playback_and_motion_review"
+      ],
+      "gate": "CONNECTED_TOOL_AND_APPROVED_COST_CEILING_REQUIRED",
+      "write_scope": "paid-generation-with-user-approval",
+      "auto_publish": false
+    },
+    {
+      "phase": "MEDIA_REVIEW_AND_LEARNING",
+      "provider": "HIGGSFIELD",
+      "skills": [
+        "verification-before-completion",
+        "requesting-code-review"
+      ],
+      "role_ids": [
+        "VX-ENG-TEST",
+        "VX-ENG-RED",
+        "VX-ENG-PROOF",
+        "VX-ENG-LEARN",
+        "MIND-SECURITY",
+        "MIND-PROOF"
+      ],
+      "required_artifacts": [
+        "file_integrity_report",
+        "brief_adherence_score",
+        "visual_defect_report",
+        "rights_and_attribution_report",
+        "human_acceptance_state",
+        "versioned_prompt_learning_record"
+      ],
+      "gate": "TECHNICAL_VERIFICATION_AND_AESTHETIC_ACCEPTANCE_ARE_SEPARATE",
+      "write_scope": "verification",
+      "auto_canonical_adoption": false
+    },
     {
       "phase": "VISUAL_RESEARCH",
       "skills": [
@@ -374,5 +519,36 @@
       ],
       "no_assumption": "The existence of legacy API documentation does not prove all discovery/search endpoints are currently available."
     }
-  ]
+  ],
+  "media_generation_provider": {
+    "provider_id": "HIGGSFIELD",
+    "accepted_aliases": [
+      "Xfield"
+    ],
+    "canonical_name": "Higgsfield",
+    "official_homepage": "https://higgsfield.ai/",
+    "official_mcp_setup": "https://higgsfield.ai/mcp",
+    "official_mcp_endpoint": "https://mcp.higgsfield.ai/mcp",
+    "api_console": "https://open.higgsfield.ai/",
+    "api_docs": "https://docs.higgsfield.ai/",
+    "integration_type": "remote MCP + optional REST API adapter",
+    "capabilities_intents": [
+      "text-to-image",
+      "image-edit-or-variation",
+      "text-to-video",
+      "image-to-video",
+      "multimodel-creative-workflows"
+    ],
+    "connection_status": "NOT_VERIFIED",
+    "billing_status": "NOT_CONFIGURED",
+    "tool_discovery_status": "NOT_VERIFIED",
+    "constraints": [
+      "Use the official MCP endpoint only; reject lookalike or third-party connector endpoints.",
+      "Resolve actual available tools and model identifiers from the connected server; never invent tool names.",
+      "Treat generation as a potentially paid external side effect requiring an explicit cost ceiling and user approval.",
+      "Never store provider credentials in repository files, prompts, artifacts or logs.",
+      "Do not auto-top-up, publish, distribute, merge or adopt generated assets into canonical authority records.",
+      "Separate technical artifact verification from aesthetic review and user acceptance."
+    ]
+  }
 }
