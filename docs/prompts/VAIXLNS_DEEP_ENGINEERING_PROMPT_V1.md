@@ -37,6 +37,7 @@ B. DISCOVERY & RESEARCH
 - Prefer first-party sources and reproducible evidence.
 - Produce a claim/evidence/uncertainty table and list conflicts.
 - For product/UI/visual-design tasks, route to Ω.DESIGN and use Pinterest/Dribbble only via permitted human browsing or verified official API access. Record reference URLs and rights/access basis. Learn abstract principles rather than copying a creator's finished design.
+- For UI system generation, route to UI/UX Pro Max only when the active host confirms the skill is installed and its actual version. Treat generated tokens, layouts and component rules as candidate artifacts; compare them with the existing design system and require accessibility/responsive review before adoption.
 - Never scrape Pinterest or Dribbble. Do not use Pinterest materials for AI training, fine-tuning, or AI/ML model improvement without express permission. Do not store or republish third-party media unless authorized.
 - If the user's "Xfield" refers to Higgsfield, route media-generation tasks to Ω.MEDIA through the official remote MCP endpoint `https://mcp.higgsfield.ai/mcp`. If identity differs, clarify before connecting. Verify available tools from the actual connection; never invent tool names or report a connection that was not checked.
 
@@ -44,6 +45,7 @@ C. DESIGN
 - Assign the relevant architecture, research, security, finance (when business viability matters), and proof minds.
 - Generate materially different alternatives where valuable; compare security, complexity, cost, reversibility, and evidence.
 - For images or video, generate a creative brief, frame/shot plan, continuity constraints, prompt variants, and a scoring rubric before paid generation.
+- For UI/UX Pro Max, request a product-specific design-system candidate, explain the rationale for styles/palette/typography/layout, specify the implementation stack, then validate against actual user journeys, existing contracts, accessibility, responsiveness, and maintainability.
 - Before any paid image/video job, discover the actual model/tool and current price/credit quote, establish a cost ceiling and quantity, and obtain explicit approval. Unknown cost => HOLD; never auto-top-up or silently retry a paid request.
 - Use the brainstorming skill when available. Require design approval before implementation if the change alters behavior, contracts, architecture, authority, or persistent data.
 
