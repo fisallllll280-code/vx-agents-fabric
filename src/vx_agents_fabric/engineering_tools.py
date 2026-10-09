@@ -452,3 +452,41 @@ def build_engineering_tool_hub(*, environ: Mapping[str, str] | None = None,
                           ("sandbox", "sandbox-write"), allowed_families=("engineering", "governance"),
                           requires_explicit_approval=True, max_input_bytes=520_000), solver.submit)
     return hub
+
+@dataclass(frozen=True)
+class ToolAccessPolicy:
+    """Trusted, role-pinned allowlist injected by the host, never supplied by a model."""
+    role_id: str
+    role_version: str
+    caller_family: str
+    authority_scope: str
+    capabilities: tuple[str, ...]
+    allowed_tool_ids: tuple[str, ...]
+    explicitly_approved_tool_ids: tuple[str, ...] = ()
+
+
+class BoundEngineeringToolDispatcher:
+    """Bind a tool hub to one immutable specialist policy before exposing it to a provider."""
+
+    def __init__(self, hub: EngineeringToolHub, policy: ToolAccessPolicy) -> None:
+        if not policy.role_id or not policy.role_version or not policy.caller_family:
+            raise ValueError("role_identity_and_family_required")
+        if len(set(policy.allowed_tool_ids)) != len(policy.allowed_tool_ids):
+            raise ValueError("duplicate_tool_ids_in_role_allowlist")
+        if not set(policy.explicitly_approved_tool_ids).issubset(set(policy.allowed_tool_ids)):
+            raise ValueError("approved_tools_must_be_in_role_allowlist")
+        self.hub = hub
+        self.policy = policy
+
+    def invoke(self, tool_id: str, arguments: Mapping[str, Any]) -> ToolResult:
+        if tool_id not in self.policy.allowed_tool_ids:
+            return ToolResult("BLOCKED", tool_id, error_code="tool_not_in_role_allowlist")
+        return self.hub.invoke(
+            tool_id,
+            arguments,
+            caller_family=self.policy.caller_family,
+            authority_scope=self.policy.authority_scope,
+            caller_capabilities=self.policy.capabilities,
+            explicit_approval=tool_id in self.policy.explicitly_approved_tool_ids,
+        )
+
