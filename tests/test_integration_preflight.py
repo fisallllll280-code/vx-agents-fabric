@@ -131,7 +131,8 @@ class IntegrationPreflightTests(unittest.TestCase):
             "HIGGSFIELD",
             capabilities=["image_generation", "video_generation"],
             evidence=["mcp_initialize_receipt", "mcp_tools_list_receipt",
-                      "image_job_receipt", "video_job_receipt"],
+                      "image_generation_approval_receipt", "image_job_receipt",
+                      "video_generation_approval_receipt", "video_job_receipt"],
             operations=["actual_image_tool", "actual_video_tool"],
         )
         result = evaluate_attestation("HIGGSFIELD", att, secret=SECRET, now=NOW)
