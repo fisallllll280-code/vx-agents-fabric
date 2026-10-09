@@ -7,6 +7,7 @@ Providers should receive the bound dispatcher, never the low-level EngineeringTo
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
+import copy
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -85,7 +86,19 @@ class VXToolControlGate:
     @property
     def events(self) -> tuple[dict[str, Any], ...]:
         """Copy of this process's receipts; not a durable production ledger."""
-        return tuple(dict(event) for event in self._events)
+        return tuple(copy.deepcopy(event) for event in self._events)
+
+    def verify_event_chain(self) -> bool:
+        previous = "0" * 64
+        for stored in self._events:
+            event = copy.deepcopy(stored)
+            claimed = event.pop("event_sha256", None)
+            if event.get("previous_event_sha256") != previous or not isinstance(claimed, str):
+                return False
+            if _digest(event) != claimed:
+                return False
+            previous = claimed
+        return previous == self._previous_hash
 
     def activate_emergency_stop(self, reason: str = "operator_stop") -> None:
         self._emergency_stop = True
@@ -188,7 +201,6 @@ class VXToolControlGate:
             "input_sha256": input_sha256,
             "input_bytes": len(raw),
             "idempotency_key": idempotency_key,
-            "decision": decision,
             "execution_status": "NOT_STARTED",
         }
 
@@ -218,6 +230,6 @@ class VXToolControlGate:
             "recorded_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         }
         event["event_sha256"] = _digest(event)
-        self._events.append(event)
+        self._events.append(copy.deepcopy(event))
         self._previous_hash = event["event_sha256"]
-        return dict(event)
+        return copy.deepcopy(event)
