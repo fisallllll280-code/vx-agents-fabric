@@ -156,8 +156,12 @@ class VLNSActivationGate:
             return ActivationResult(False, "NOT_CONFIGURED", reason="VLNS_ACTIVATION_SIGNING_KEY_TOO_SHORT_OR_MISSING")
         if cfg.provider not in cfg.allowed_providers:
             return ActivationResult(False, "POLICY_BLOCKED", reason="PROVIDER_NOT_ALLOWLISTED")
-        if not capabilities or set(capabilities) - set(cfg.allowed_capabilities):
+        if not capabilities or any(not isinstance(item, str) or not item.strip() for item in capabilities):
+            return ActivationResult(False, "POLICY_BLOCKED", reason="CAPABILITY_PROFILE_INVALID")
+        if set(capabilities) - set(cfg.allowed_capabilities):
             return ActivationResult(False, "POLICY_BLOCKED", reason="CAPABILITY_NOT_ALLOWLISTED")
+        if any(not isinstance(item, str) or not item.strip() for item in tools):
+            return ActivationResult(False, "POLICY_BLOCKED", reason="TOOL_PROFILE_INVALID")
         if set(tools) - set(cfg.allowed_tools):
             return ActivationResult(False, "POLICY_BLOCKED", reason="TOOL_NOT_ALLOWLISTED")
 
@@ -241,6 +245,16 @@ class VLNSGuardedAgentAdapter:
             "input_artifact_ids": list(task.input_artifact_ids),
             "agent": {"role_id": task.agent.role_id, "version": task.agent.version, "family": task.agent.family},
         }
+        raw_tools = task.payload.get("tool_profile", ())
+        if not isinstance(raw_tools, (list, tuple)):
+            output_kind = task.agent.outputs[0] if task.agent.outputs else "activation_gate"
+            return Artifact(
+                artifact_id=task.task_id + ":vlns-gate", kind=output_kind, status="HOLD",
+                content={"activation_status": "POLICY_BLOCKED", "reason": "TOOL_PROFILE_INVALID"},
+                source_agent=task.agent.role_id, source_version=task.agent.version,
+                input_artifact_ids=task.input_artifact_ids,
+                limitations=("VLNS_ACTIVATION_GATE_BLOCKED", "TOOL_PROFILE_INVALID"),
+            )
         outcome = self.gate.activate(
             model_id=self.model_id,
             model_version=self.model_version,
@@ -249,7 +263,7 @@ class VLNSGuardedAgentAdapter:
             task_id=task.task_id,
             source_id=f"vx-workflow://{task.workflow_id}/{task.task_id}",
             context=context,
-            tools=tuple(task.payload.get("tool_profile", ())) if isinstance(task.payload.get("tool_profile", ()), (list, tuple)) else (),
+            tools=tuple(raw_tools),
         )
         if not outcome.ok:
             output_kind = task.agent.outputs[0] if task.agent.outputs else "activation_gate"
