@@ -78,6 +78,7 @@ The command returns exit code 0 only when it produces a candidate eligible for s
 ## Governed Prompt Office integrations
 
 - [Superpowers × Prompt Office integration contract](docs/integration/SUPERPOWERS_PROMPT_OFFICE_FABRIC_V1.md)
+- [UI/UX Pro Max design-intelligence integration](docs/integration/UI_UX_PRO_MAX_DESIGN_INTELLIGENCE_V1.md)
 - [Higgsfield image/video generation via official MCP](docs/integration/HIGGSFIELD_MEDIA_MCP_V1.md)
 - [Deep Engineering Prompt for Prompt Chat](docs/prompts/VAIXLNS_DEEP_ENGINEERING_PROMPT_V1.md)
 - [Office/skill/media routing registry](config/office_skill_routing.v1.json)
