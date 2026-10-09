@@ -100,6 +100,11 @@ Use read-only public scopes for visual research. Never request upload/write scop
 - `OPERATIONAL`: fresh signed evidence satisfies all integration-specific operational gates.
 - `NOT_DECLARED`: the canonical routing registry does not declare the integration.
 
+The aggregate report is:
+- `OPERATIONAL` only when every declared integration passes operational gates;
+- `BLOCKED` when any signed evidence is invalid, expired, or reports a failed probe;
+- `PARTIAL` when connections/operations are missing or not yet configured, without a tampered/stale receipt.
+
 No state is promoted by prose or by the integration's own status flag alone.
 
 ## 6. Run a read-only preflight
