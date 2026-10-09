@@ -66,3 +66,12 @@ To preserve operations across process restarts, configure protected local paths:
     VX_FAILURE_MEMORY_PATH=/var/lib/vx-agents/failures.jsonl
 
 The command returns exit code 0 only when it produces a candidate eligible for separate VAIXLNS governance review; 2 means HOLD/incomplete evidence or missing adapters, 3 means REJECT, and 4 means a local configuration/input error. A zero exit code is **not** production-release approval. A chat model connection alone does not provide web search, GitHub repository access or a code-execution sandbox; configure and validate those adapters separately.
+
+
+## Closed-loop archive, server and software engineering extension
+
+The specialist catalog now includes a read-only server/repository reconnaissance role, a zero-loss archive indexer, an index reconciliation analyst, a programming/repair engineer, a compiler/toolchain engineer and a development/CI engineer. They are routed through the same versioned contracts and VX boundary as the existing research and engineering roles.
+
+The lifecycle controller in \`src/vx_agents_fabric/closed_loop.py\` enforces evidence-gated transitions for indexing, sandbox implementation, tests, independent verification, proof freshness, governance admission, deployment approval, runtime observation and recovery/replay. It is a policy module—not a server scanner, GitHub credential, live provider, production deployment or replacement for the canonical VAIXLNS ledger.
+
+See \`docs/server_repository_inventory_v1.md\` for the dated inventory of previously referenced repositories, infrastructure requirements and server endpoints. Private-LAN endpoints are recorded as unverified references and are not probed from an external environment.
