@@ -114,6 +114,7 @@ class WorkflowEvent:
     payload_hash: str
     previous_hash: str
     event_hash: str
+    payload: Mapping[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
