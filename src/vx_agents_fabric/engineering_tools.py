@@ -8,11 +8,14 @@ import json
 import math
 import os
 import re
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Mapping
+
+from .tool_control import VXToolControlGate
 
 JSONMap = dict[str, Any]
 OpenUrl = Callable[..., Any]
@@ -54,6 +57,7 @@ class ToolResult:
     result: Mapping[str, Any] = field(default_factory=dict)
     error_code: str | None = None
     evidence: ToolEvidence | None = None
+    control_decision: Mapping[str, Any] | None = None
 
     def to_dict(self) -> JSONMap:
         return asdict(self)
@@ -463,6 +467,10 @@ class ToolAccessPolicy:
     capabilities: tuple[str, ...]
     allowed_tool_ids: tuple[str, ...]
     explicitly_approved_tool_ids: tuple[str, ...] = ()
+    max_tool_calls: int = 64
+    max_total_input_bytes: int = 1_000_000
+    max_input_bytes_per_call: int = 1_000_000
+    max_elapsed_seconds: float = 300.0
 
 
 class BoundEngineeringToolDispatcher:
@@ -477,16 +485,84 @@ class BoundEngineeringToolDispatcher:
             raise ValueError("approved_tools_must_be_in_role_allowlist")
         self.hub = hub
         self.policy = policy
+        self.control_gate = VXToolControlGate(
+            max_tool_calls=policy.max_tool_calls,
+            max_total_input_bytes=policy.max_total_input_bytes,
+            max_elapsed_seconds=policy.max_elapsed_seconds,
+        )
+        self._started_at = time.monotonic()
+        self._attempted_calls = 0
+        self._cumulative_input_bytes = 0
+
+    @property
+    def control_events(self) -> tuple[dict[str, Any], ...]:
+        """Hash-chained receipts for this dispatcher process; durable ledger binding is separate."""
+        return self.control_gate.events
+
+    def activate_emergency_stop(self, reason: str = "operator_stop") -> None:
+        self.control_gate.activate_emergency_stop(reason)
+
+    def clear_emergency_stop(self, *, authorized: bool = False) -> None:
+        self.control_gate.clear_emergency_stop(authorized=authorized)
 
     def invoke(self, tool_id: str, arguments: Mapping[str, Any]) -> ToolResult:
-        if tool_id not in self.policy.allowed_tool_ids:
-            return ToolResult("BLOCKED", tool_id, error_code="tool_not_in_role_allowlist")
-        return self.hub.invoke(
+        spec = self.hub._specs.get(tool_id)
+        attempt_number = self._attempted_calls
+        self._attempted_calls += 1
+        try:
+            input_bytes = len(canonical_json(dict(arguments)).encode("utf-8"))
+        except (TypeError, ValueError):
+            input_bytes = 0
+        idempotency_key = "VX-IDEM-" + sha256_json({
+            "role_id": self.policy.role_id,
+            "role_version": self.policy.role_version,
+            "attempt": attempt_number,
+            "tool_id": tool_id,
+            "input_bytes": input_bytes,
+        })
+        decision = self.control_gate.evaluate(
+            policy=self.policy,
+            tool_spec=spec,
+            tool_id=tool_id,
+            arguments=arguments,
+            explicit_approval=tool_id in self.policy.explicitly_approved_tool_ids,
+            attempted_calls=attempt_number,
+            cumulative_input_bytes=self._cumulative_input_bytes,
+            elapsed_seconds=time.monotonic() - self._started_at,
+            idempotency_key=idempotency_key,
+        )
+        if decision["decision"] != "ALLOW":
+            self._cumulative_input_bytes += input_bytes
+            receipt = self.control_gate.record(
+                decision, execution_status="NOT_EXECUTED", error_code=decision["reason_code"]
+            )
+            decision = {**decision, "execution_status": "NOT_EXECUTED", "receipt": receipt}
+            return ToolResult(
+                "BLOCKED", tool_id, error_code=decision["reason_code"],
+                control_decision=decision,
+            )
+
+        self._cumulative_input_bytes += input_bytes
+        result = self.hub.invoke(
             tool_id,
             arguments,
             caller_family=self.policy.caller_family,
             authority_scope=self.policy.authority_scope,
             caller_capabilities=self.policy.capabilities,
             explicit_approval=tool_id in self.policy.explicitly_approved_tool_ids,
+        )
+        output_sha256 = result.evidence.output_sha256 if result.evidence else None
+        receipt = self.control_gate.record(
+            decision, execution_status=result.status,
+            output_sha256=output_sha256, error_code=result.error_code,
+        )
+        control_decision = {
+            **decision,
+            "execution_status": result.status,
+            "receipt": receipt,
+        }
+        return ToolResult(
+            result.status, result.tool_id, result.result, result.error_code,
+            result.evidence, control_decision,
         )
 
