@@ -49,14 +49,14 @@ POLICIES: dict[str, dict[str, Any]] = {
         "official_endpoint": "https://mcp.higgsfield.ai/mcp",
         "connect_capabilities": ("image_generation", "video_generation"),
         "connect_evidence": ("mcp_initialize_receipt", "mcp_tools_list_receipt"),
-        "operational_evidence": ("image_job_receipt", "video_job_receipt"),
+        "operational_evidence": ("image_generation_approval_receipt", "image_job_receipt", "video_generation_approval_receipt", "video_job_receipt"),
         "needs_operations": ("image_generation", "video_generation"),
     },
     "WHATSAPP_BUSINESS_CLOUD_API": {
         "integration_type": "cloud_api",
         "official_endpoint_host": "graph.facebook.com",
         "connect_capabilities": (
-            "outbound_send", "inbound_webhook", "delivery_status_webhook",
+            "outbound_send", "inbound_webhook", "delivery_status_webhook", "recipient_consent_gate",
         ),
         "connect_evidence": ("business_account_check", "webhook_verification_receipt"),
         "operational_evidence": (
