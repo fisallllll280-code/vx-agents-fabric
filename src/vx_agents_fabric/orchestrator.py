@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import asdict
 import os
 from typing import Any, Callable, Mapping
+from .artifact_archive import ArtifactArchive
+from .failure_memory import FailureMemory
 from .contracts import (
     AgentRunResult, Artifact, EngineeringDecision, MindReview, TaskEnvelope, WorkflowReport, content_hash
 )
