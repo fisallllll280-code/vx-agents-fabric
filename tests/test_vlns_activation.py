@@ -137,6 +137,25 @@ class VLNSActivationGateTests(unittest.TestCase):
         self.assertIn("RECEIPT_INVALID", result.limitations)
         self.assertEqual(calls, [])
 
+    def test_server_url_is_ignored_when_server_enable_flag_is_false(self):
+        cfg = VLNSGateConfig.from_env({
+            "VX_VLNS_ACTIVATION_REQUIRED": "true",
+            "VLNS_SERVER_URL": "https://vlns.example",
+            "VLNS_SERVER_ENABLED": "false",
+            "VLNS_ACTIVATION_SIGNING_KEY": KEY.decode("utf-8"),
+            "VX_VLNS_PROVIDER_ID": "openai-compatible",
+            "VLNS_ALLOWED_PROVIDERS": "openai-compatible",
+            "VLNS_ALLOWED_CAPABILITIES": "reasoning,verification",
+        })
+        self.assertEqual(cfg.base_url, "")
+        outcome = VLNSActivationGate(cfg).activate(
+            model_id="review-model", model_version="review-model:rev-1",
+            role="verifier_mind", capabilities=("reasoning", "verification"),
+            task_id="test-disabled", source_id="review-source", context={"claim": "test"},
+        )
+        self.assertFalse(outcome.ok)
+        self.assertEqual(outcome.status, "NOT_CONFIGURED")
+
     def test_missing_capability_allowlist_blocks_activation(self):
         gate = VLNSActivationGate(config(capabilities=("engineering",)))
         result = gate.activate(
