@@ -81,3 +81,32 @@ Optional environment variables enable fsync-backed JSONL stores:
 - \`VX_FAILURE_MEMORY_PATH\`: records compact failed/blocked task patterns and remediation lessons. Matching history is passed to later attempts for that agent and stage.
 
 When paths are unset, stores remain in memory for local tests. Persistent journals may contain workflow and artifact content; restrict filesystem access and retention. Do not pass secrets as agent context. Failure memory is retrieval of prior operational incidents, not model-weight retraining. Durable event/artifact storage supports replay inspection; fully automatic resumption after a crash still requires a dedicated checkpoint/replay controller and VAIXLNS operational-admission proof.
+
+
+## Runnable workflow entry point
+
+With the package source on \`PYTHONPATH\`:
+
+    PYTHONPATH=src python -m vx_agents_fabric.cli --goal "Design and validate an engineering capability" --workflow-id WF-ENG-001 --output reports/WF-ENG-001.json
+
+Use \`--goal-file\` for a longer goal and \`--context-file\` for a JSON object with explicit \`shared\`, \`research\`, \`finance\`, \`engineering\` and \`governance\` sections. Pin an exact specialist version with, for example, \`VX_AGENT_VERSION_PIN_VX_ENG_TEST=1.0.0\`.
+
+Example opt-in configuration (names are examples; credentials must be configured securely):
+
+    VX_OPENAI_COMPAT_BASE_URL=http://127.0.0.1:11434/v1
+    VX_RESEARCH_MODEL=<model-name>
+    VX_FINANCE_MODEL=<model-name>
+    VX_ENGINEERING_MODEL=<model-name>
+    VX_MIND_MODEL_MIND_SYS_ARCH=<independent-review-model>
+    VX_MIND_MODEL_MIND_RESEARCH=<independent-review-model>
+    VX_MIND_MODEL_MIND_FINANCE=<independent-review-model>
+    VX_MIND_MODEL_MIND_SECURITY=<independent-review-model>
+    VX_MIND_MODEL_MIND_PROOF=<independent-review-model>
+
+To preserve operations across process restarts, configure protected local paths:
+
+    VX_EVENT_LEDGER_PATH=/var/lib/vx-agents/events.jsonl
+    VX_ARTIFACT_ARCHIVE_PATH=/var/lib/vx-agents/artifacts.jsonl
+    VX_FAILURE_MEMORY_PATH=/var/lib/vx-agents/failures.jsonl
+
+The command returns exit code 0 only when it produces a candidate eligible for separate VAIXLNS governance review; 2 means HOLD/incomplete evidence or missing adapters, 3 means REJECT, and 4 means a local configuration/input error. A zero exit code is **not** production-release approval. A chat model connection alone does not provide web search, GitHub repository access or a code-execution sandbox; configure and validate those adapters separately.
