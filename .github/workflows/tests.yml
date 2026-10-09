@@ -18,4 +18,6 @@ jobs:
         with:
           python-version: "3.12"
       - name: Run unit tests
+        env:
+          PYTHONPATH: src
         run: python -m unittest discover -s tests -v
