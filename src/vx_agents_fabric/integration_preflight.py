@@ -25,6 +25,24 @@ SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 # Official endpoints are trust anchors; runtime manifests may not introduce
 # endpoints from user/model content.
 POLICIES: dict[str, dict[str, Any]] = {
+    "PINTEREST_API": {
+        "integration_type": "rest_api",
+        "official_endpoint_host": "api.pinterest.com",
+        "versioned_path": r"^/v5(?:/|$)",
+        "connect_capabilities": ("read_visual_references", "record_attribution"),
+        "connect_evidence": ("oauth_scope_receipt", "api_identity_probe_receipt"),
+        "operational_evidence": ("reference_sample_receipt", "attribution_record"),
+        "needs_operations": ("read_visual_references", "record_attribution"),
+    },
+    "DRIBBBLE_API": {
+        "integration_type": "rest_api",
+        "official_endpoint_host": "api.dribbble.com",
+        "versioned_path": r"^/v2(?:/|$)",
+        "connect_capabilities": ("read_visual_references", "record_attribution"),
+        "connect_evidence": ("oauth_scope_receipt", "api_identity_probe_receipt"),
+        "operational_evidence": ("reference_sample_receipt", "attribution_record"),
+        "needs_operations": ("read_visual_references", "record_attribution"),
+    },
     "SUPERPOWERS": {
         "integration_type": "agent_skill",
         "official_endpoint": "https://github.com/obra/superpowers",
@@ -130,15 +148,25 @@ def _endpoint_matches(provider_id: str, endpoint: Any) -> bool:
     policy = POLICIES[provider_id]
     if "official_endpoint" in policy:
         return endpoint.rstrip("/") == policy["official_endpoint"].rstrip("/")
-    if provider_id == "WHATSAPP_BUSINESS_CLOUD_API":
-        return (
-            parsed.hostname == policy["official_endpoint_host"]
-            and bool(re.match(r"^/v\d+\.\d+(?:/|$)", parsed.path))
-        )
+    if "official_endpoint_host" in policy:
+        if parsed.hostname != policy["official_endpoint_host"]:
+            return False
+        versioned_path = policy.get("versioned_path")
+        return not versioned_path or bool(re.match(versioned_path, parsed.path))
     return False
 
 
 def _declared(config: Mapping[str, Any], provider_id: str) -> bool:
+    if provider_id in {"PINTEREST_API", "DRIBBBLE_API"}:
+        source_id = "PINTEREST" if provider_id == "PINTEREST_API" else "DRIBBBLE"
+        required_mode = "official_api_v5" if provider_id == "PINTEREST_API" else "official_api_v2"
+        for source in config.get("visual_reference_sources", []):
+            if not isinstance(source, Mapping) or source.get("source_id") != source_id:
+                continue
+            for mode in source.get("access_modes", []):
+                if isinstance(mode, Mapping) and mode.get("mode") == required_mode:
+                    return True
+        return False
     if provider_id == "SUPERPOWERS":
         return (
             isinstance(config.get("upstream"), Mapping)
