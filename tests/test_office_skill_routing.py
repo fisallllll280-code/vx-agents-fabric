@@ -71,6 +71,30 @@ class OfficeSkillRoutingTests(unittest.TestCase):
         self.assertIn("fresh_test_results", routes["VERIFY"]["required_artifacts"])
         self.assertEqual(routes["VERIFY"]["gate"], "INDEPENDENT_EVIDENCE_REQUIRED")
 
+    def test_visual_research_office_uses_registered_roles_and_known_sources(self):
+        offices = {item["office_id"]: item for item in self.config["offices"]}
+        self.assertIn("Ω.DESIGN", offices)
+        self.assertTrue(set(offices["Ω.DESIGN"]["role_ids"]).issubset(self.known_roles))
+        sources = {item["source_id"]: item for item in self.config["visual_reference_sources"]}
+        self.assertIn("PINTEREST", sources)
+        self.assertIn("DRIBBBLE", sources)
+        self.assertEqual(
+            sources["PINTEREST"]["access_modes"][-1]["status"],
+            "ANNOUNCED_PUBLIC_AVAILABILITY_NOT_CONFIRMED",
+        )
+
+    def test_visual_research_prohibits_scraping_and_unlicensed_model_training(self):
+        sources = {item["source_id"]: item for item in self.config["visual_reference_sources"]}
+        pinterest_policy = " ".join(sources["PINTEREST"]["policy_constraints"]).lower()
+        dribbble_policy = " ".join(sources["DRIBBBLE"]["policy_constraints"]).lower()
+        self.assertIn("scraping", pinterest_policy)
+        self.assertIn("train", pinterest_policy)
+        self.assertIn("scraping", dribbble_policy)
+        routes = {item["phase"]: item for item in self.config["phase_routes"]}
+        self.assertIn("VISUAL_RESEARCH", routes)
+        self.assertEqual(routes["VISUAL_RESEARCH"]["write_scope"], "none")
+        self.assertIn("abstract_pattern_matrix", routes["VISUAL_RESEARCH"]["required_artifacts"])
+
 
 if __name__ == "__main__":
     unittest.main()
