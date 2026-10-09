@@ -1,0 +1,31 @@
+{
+  "integration_id": "WHATSAPP_BUSINESS_CLOUD_API",
+  "status": "EXAMPLE_ONLY_NOT_CONFIGURED",
+  "graph_api_version": "SET_AND_PIN_A_CURRENT_SUPPORTED_VERSION",
+  "environment_variables": {
+    "META_APP_ID": "SET_IN_SECRET_OR_DEPLOYMENT_CONFIGURATION",
+    "META_APP_SECRET": "SECRET_STORE_ONLY",
+    "META_ACCESS_TOKEN": "SECRET_STORE_ONLY",
+    "WHATSAPP_BUSINESS_ACCOUNT_ID": "SET_IN_DEPLOYMENT_CONFIGURATION",
+    "WHATSAPP_PHONE_NUMBER_ID": "SET_IN_DEPLOYMENT_CONFIGURATION",
+    "WHATSAPP_WEBHOOK_VERIFY_TOKEN": "SECRET_STORE_ONLY"
+  },
+  "policy": {
+    "default_outbound_state": "DRAFT",
+    "require_approval_before_send": true,
+    "require_recipient_consent_basis": true,
+    "reject_unknown_template_or_window_rules": true,
+    "allow_bulk_outreach": false,
+    "allow_personal_whatsapp_web_automation": false,
+    "allow_logging_message_body": false,
+    "production_enabled": false
+  },
+  "webhook": {
+    "require_https": true,
+    "verify_provider_authenticity": true,
+    "validate_schema": true,
+    "deduplicate_events": true,
+    "reject_replay": true,
+    "minimize_payload_storage": true
+  }
+}
