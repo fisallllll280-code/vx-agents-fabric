@@ -132,6 +132,27 @@ class OfficeSkillRoutingTests(unittest.TestCase):
         self.assertEqual(example["mcpServers"]["higgsfield"]["type"], "http")
         self.assertEqual(set(example.keys()), {"mcpServers"})
 
+    def test_ui_ux_pro_max_route_and_official_install_metadata(self):
+        integration = next(
+            item for item in self.config["design_intelligence_integrations"]
+            if item["integration_id"] == "UI_UX_PRO_MAX"
+        )
+        self.assertEqual(
+            integration["upstream_repository"],
+            "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill",
+        )
+        self.assertEqual(integration["installed_status"], "NOT_VERIFIED")
+        self.assertTrue(integration["install_for_claude_code"])
+        routes = {item["phase"]: item for item in self.config["phase_routes"]}
+        self.assertIn("UIUX_DESIGN_SYSTEM", routes)
+        self.assertEqual(routes["UIUX_DESIGN_SYSTEM"]["design_engine"], "UI_UX_PRO_MAX")
+        self.assertEqual(
+            routes["UIUX_DESIGN_SYSTEM"]["gate"],
+            "DESIGN_SYSTEM_REVIEW_BEFORE_CANONICAL_PERSISTENCE",
+        )
+        self.assertTrue(routes["UIUX_DESIGN_SYSTEM"]["canonical_persist_requires_approval"])
+        self.assertIn("accessibility_review", routes["UIUX_DESIGN_SYSTEM"]["required_artifacts"])
+
 
 if __name__ == "__main__":
     unittest.main()
