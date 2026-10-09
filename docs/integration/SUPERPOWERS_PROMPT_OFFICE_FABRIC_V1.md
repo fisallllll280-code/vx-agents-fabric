@@ -13,6 +13,18 @@ Integrate Superpowers' software-development skills as a governed method layer fo
 
 The integration therefore references skills by identifier and maps each workflow stage to existing VX specialist roles. A host-specific adapter must invoke or expose the relevant skills. Until that adapter and its environment are detected and tested, the corresponding route is `NOT_CONFIGURED`; the orchestration must not pretend the skill ran.
 
+## 1.1 Host installation and connection check
+
+For Claude Code, the upstream repository documents installation through the official Claude plugin marketplace:
+
+```text
+/plugin install superpowers@claude-plugins-official
+```
+
+Run this in the intended Claude Code environment and follow its prompts. Then start/reload the relevant agent session and verify the actual skills exposed by that installed release. Do not copy this command into `mcp_config.json`: it is a host plugin installation step, not an MCP server command.
+
+The repository-side routing registry here remains declarative. To mark Superpowers as connected, a host adapter must demonstrate that it can resolve and invoke the configured skill, record the actual skill/release, and return an inspectable result. Otherwise the route must remain `NOT_CONFIGURED` or `HOLD`. Installing the plugin alone does not connect GitHub access, a sandbox, VAIXLNS canonical storage, or VX runtime authority.
+
 ## 2. Canonical responsibility boundary
 
 - **Prompt Chat:** captures the user's intention and returns a traceable workflow report.
