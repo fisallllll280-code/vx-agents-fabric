@@ -66,3 +66,25 @@ To preserve operations across process restarts, configure protected local paths:
     VX_FAILURE_MEMORY_PATH=/var/lib/vx-agents/failures.jsonl
 
 The command returns exit code 0 only when it produces a candidate eligible for separate VAIXLNS governance review; 2 means HOLD/incomplete evidence or missing adapters, 3 means REJECT, and 4 means a local configuration/input error. A zero exit code is **not** production-release approval. A chat model connection alone does not provide web search, GitHub repository access or a code-execution sandbox; configure and validate those adapters separately.
+
+
+## Optional VLNS pre-activation enforcement
+
+The provider factory can require a VLNS activation receipt before calling any specialist model or independent parent-review mind. When enabled, a missing server URL, disabled server, short/missing signing key, unallowlisted provider/capability/tool, remote rejection, mismatched receipt, or failed evidence acknowledgement makes the adapter return HOLD and skips the model inference.
+
+Configure only in the runtime environment:
+
+    VX_VLNS_ACTIVATION_REQUIRED=true
+    VLNS_SERVER_ENABLED=true
+    VLNS_SERVER_URL=https://<configured-vlns-host>
+    VLNS_SERVER_TOKEN=<secret-from-secret-manager>
+    VLNS_SERVER_ACTIVATION_PATH=/v1/activations
+    VLNS_SERVER_EVENT_PATH=/events
+    VLNS_ACTIVATION_SIGNING_KEY=<separate-secret-of-at-least-32-bytes>
+    VX_VLNS_PROVIDER_ID=openai-compatible
+    VLNS_ALLOWED_PROVIDERS=openai-compatible,ollama
+    VLNS_ALLOWED_CAPABILITIES=<comma-separated-explicit-allowlist>
+    VLNS_ALLOWED_TOOLS=<comma-separated-explicit-allowlist>
+    VX_VLNS_MIND_CAPABILITIES=reasoning,verification
+
+Use VX_VLNS_MODEL_VERSION or VX_VLNS_MODEL_VERSION_<ROLE_VERSION> to pin the model revision identifier rather than relying on an alias. Do not commit credentials. Gate enforcement is optional for backward compatibility and is only active when VX_VLNS_ACTIVATION_REQUIRED=true; production configurations that claim VLNS-governed execution must enable it and verify the live endpoint. Local unit tests do not prove that endpoint exists or conforms.
