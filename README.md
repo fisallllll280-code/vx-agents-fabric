@@ -79,7 +79,7 @@ Configure only in the runtime environment:
     VLNS_SERVER_URL=https://<configured-vlns-host>
     VLNS_SERVER_TOKEN=<secret-from-secret-manager>
     VLNS_SERVER_ACTIVATION_PATH=/v1/activations
-    VLNS_SERVER_EVENT_PATH=/events
+    VX_VLNS_EVIDENCE_DB=var/vx_vlns_evidence.sqlite3
     VLNS_ACTIVATION_SIGNING_KEY=<separate-secret-of-at-least-32-bytes>
     VX_VLNS_PROVIDER_ID=openai-compatible
     VLNS_ALLOWED_PROVIDERS=openai-compatible,ollama
@@ -87,4 +87,4 @@ Configure only in the runtime environment:
     VLNS_ALLOWED_TOOLS=<comma-separated-explicit-allowlist>
     VX_VLNS_MIND_CAPABILITIES=reasoning,verification
 
-Use VX_VLNS_MODEL_VERSION or VX_VLNS_MODEL_VERSION_<ROLE_VERSION> to pin the model revision identifier rather than relying on an alias. Do not commit credentials. Gate enforcement is optional for backward compatibility and is only active when VX_VLNS_ACTIVATION_REQUIRED=true; production configurations that claim VLNS-governed execution must enable it and verify the live endpoint. Local unit tests do not prove that endpoint exists or conforms.
+Use VX_VLNS_MODEL_VERSION or VX_VLNS_MODEL_VERSION_<ROLE_VERSION> to pin the model revision identifier rather than relying on an alias. Do not commit credentials. Gate enforcement is optional for backward compatibility and is only active when VX_VLNS_ACTIVATION_REQUIRED=true; production configurations that claim VLNS-governed execution must enable it and verify the live endpoint. Local unit tests do not prove that endpoint exists or conforms. The agent-fabric journal is separate from the VAIXLNS-unified DurableEventStore until a verified evidence-federation mechanism is implemented.
