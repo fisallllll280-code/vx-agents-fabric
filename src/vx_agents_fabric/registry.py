@@ -1,16 +1,19 @@
 """Version-aware specialist and multi-mind registries."""
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import re
 from typing import Iterable
 from .contracts import AgentSpec, MindSpec
 
 
-def _version_key(version: str) -> tuple[int, int, int, str]:
+def _version_key(version: str) -> tuple[int, int, int, int, str]:
     match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:[-+]([0-9A-Za-z.-]+))?", version)
     if not match:
         raise ValueError(f"version_must_be_semver_like:{version}")
-    return (int(match.group(1)), int(match.group(2)), int(match.group(3)), match.group(4) or "")
+    suffix = match.group(4) or ""
+    # A stable release sorts after its pre-releases (e.g. 1.1.0 > 1.1.0-rc1).
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3)),
+            1 if not suffix else 0, suffix)
 
 
 @dataclass
@@ -118,6 +121,27 @@ def default_registry() -> AgentRegistry:
     ]
     registry = AgentRegistry()
     registry.add_many(specs)
+
+    # Keep multiple immutable design variants available; workflows may pin one.
+    version_variants = (
+        ("VX-RES-SYNTH", "1.1.0", "Evidence Synthesis Agent — Claim/Evidence Graph",
+         ("claim_evidence_matrix", "uncertainty_register")),
+        ("VX-FIN-RISK", "1.1.0", "Financial Risk Analyst — Stress Variant",
+         ("risk_report", "sensitivity_matrix", "downside_scenarios")),
+        ("VX-ENG-ARCH", "1.1.0", "Systems Architecture Engineer — Causal Variant",
+         ("architecture_candidate", "causal_impact_map", "rollback_plan")),
+        ("VX-ENG-TEST", "1.1.0", "Test & Reproducibility Engineer — Replay Variant",
+         ("test_report", "replay_report", "regression_report")),
+        ("VX-ENG-PROOF", "1.1.0", "Proof & Assurance Engineer — Freshness Variant",
+         ("proof_package", "freshness_report", "obligation_matrix")),
+    )
+    for role_id, version, name, outputs in version_variants:
+        baseline = registry.resolve(role_id, "1.0.0")
+        registry.register(replace(
+            baseline, version=version, name=name, outputs=outputs,
+            capabilities=baseline.capabilities + ("versioned_contract",),
+        ))
+
     minds = (
         MindSpec("MIND-SYS-ARCH", "Independent systems architecture review", "UNBOUND", "unconfigured", ("VX-ENG-ARCH", "VX-ENG-COORD")),
         MindSpec("MIND-RESEARCH", "Evidence quality and uncertainty review", "UNBOUND", "unconfigured", ("VX-RES-SOURCE", "VX-RES-CONTRA", "VX-RES-SYNTH")),

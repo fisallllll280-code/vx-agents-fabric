@@ -27,6 +27,15 @@ class RegistryTests(unittest.TestCase):
         self.assertGreaterEqual(len(registry.minds), 5)
         self.assertIn("MIND-PROOF", registry.minds)
 
+    def test_default_catalog_retains_parallel_specialist_versions(self):
+        registry = default_registry()
+        self.assertEqual(len(registry.versions("VX-ENG-TEST")), 2)
+        self.assertEqual(registry.resolve("VX-ENG-TEST").version, "1.1.0")
+        self.assertEqual(registry.resolve("VX-ENG-TEST", "1.0.0").version, "1.0.0")
+        self.assertGreater(
+            registry.resolve("VX-ENG-TEST").outputs.count("replay_report"), 0
+        )
+
 
 class SafetyAndLineageTests(unittest.TestCase):
     def test_financial_transactions_are_denied_by_default(self):
@@ -69,9 +78,13 @@ class SafetyAndLineageTests(unittest.TestCase):
                 "hard_gate_failures": [],
             }
         mind_adapters = {mind_id: make_mind_adapter(mind_id) for mind_id in registry.minds}
-        orchestrator = EngineeringOrchestrator(registry, agent_adapters, mind_adapters)
+        orchestrator = EngineeringOrchestrator(
+            registry, agent_adapters, mind_adapters, version_pins={"VX-ENG-TEST": "1.0.0"}
+        )
         report = orchestrator.run("Test the engineering pipeline", workflow_id="WF-TEST-FULL")
         self.assertEqual(report.status, "CANDIDATE_READY_FOR_GOVERNANCE")
+        test_result = next(item for item in report.results if item.agent_id == "VX-ENG-TEST")
+        self.assertEqual(test_result.agent_version, "1.0.0")
         self.assertEqual(len(report.mind_reviews), len(registry.minds))
         self.assertEqual(set(report.decision.reviewed_minds), set(registry.minds))
         self.assertFalse(report.decision.production_authorized)

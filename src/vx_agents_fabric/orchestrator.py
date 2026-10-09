@@ -101,10 +101,12 @@ class EngineeringOrchestrator:
     def __init__(self, registry: AgentRegistry | None = None,
                  adapters: Mapping[str, AgentAdapter] | None = None,
                  mind_adapters: Mapping[str, MindAdapter] | None = None,
+                 version_pins: Mapping[str, str] | None = None,
                  ledger: IntegrityLedger | None = None) -> None:
         self.registry = registry or default_registry()
         self.adapters = dict(adapters or {})
         self.mind_adapters = dict(mind_adapters or {})
+        self.version_pins = dict(version_pins or {})
         self.ledger = ledger or IntegrityLedger()
         self.boundary = VXExecutionBoundary()
 
@@ -118,8 +120,8 @@ class EngineeringOrchestrator:
 
         for stage, role_ids in PIPELINE:
             for role_id in role_ids:
-                spec = self.registry.resolve(role_id)
-                task_id = f"{workflow_id}:{stage}:{role_id}"
+                spec = self.registry.resolve(role_id, self.version_pins.get(role_id))
+                task_id = f"{workflow_id}:{stage}:{spec.key}"
                 inputs = tuple(artifact.artifact_id for artifact in report.artifacts)
                 task_payload = {
                     "goal": goal, "context": context_payload,
@@ -144,7 +146,7 @@ class EngineeringOrchestrator:
                     self.ledger.append(workflow_id, "AGENT_BLOCKED", task_id, asdict(result))
                     continue
 
-                adapter = self.adapters.get(role_id)
+                adapter = self.adapters.get(spec.key, self.adapters.get(role_id))
                 if adapter is None:
                     report.missing_adapters.append(role_id)
                     result = AgentRunResult(task_id, role_id, spec.version, stage, "NOT_CONFIGURED", None,
