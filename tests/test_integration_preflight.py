@@ -234,6 +234,17 @@ class IntegrationPreflightTests(unittest.TestCase):
         self.assertFalse(result["safety"]["messages_sent"])
         self.assertFalse(result["safety"]["canonical_state_mutated"])
 
+    def test_invalid_attestation_blocks_aggregate_preflight(self):
+        config = {"media_generation_provider": {"provider_id": "HIGGSFIELD"}}
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "higgsfield.json"
+            path.write_text("{not-json", encoding="utf-8")
+            result = preflight(config, temp, secret=SECRET, now=NOW)
+        self.assertEqual(result["status"], "BLOCKED")
+        higgsfield = next(item for item in result["checks"] if item["provider_id"] == "HIGGSFIELD")
+        self.assertEqual(higgsfield["state"], "INVALID_ATTESTATION")
+        self.assertFalse(higgsfield["connection_verified"])
+
     def test_short_signing_key_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "at_least_32_bytes"):
             attestation_signature({"provider_id": "HIGGSFIELD"}, "short")
