@@ -30,12 +30,16 @@ def make_attestation(
     expires=None,
 ):
     endpoints = {
+        "PINTEREST_API": "https://api.pinterest.com/v5/user_account",
+        "DRIBBBLE_API": "https://api.dribbble.com/v2/user",
         "SUPERPOWERS": "https://github.com/obra/superpowers",
         "UI_UX_PRO_MAX": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill",
         "HIGGSFIELD": "https://mcp.higgsfield.ai/mcp",
         "WHATSAPP_BUSINESS_CLOUD_API": "https://graph.facebook.com/v23.0/123456/messages",
     }
     types = {
+        "PINTEREST_API": "rest_api",
+        "DRIBBBLE_API": "rest_api",
         "SUPERPOWERS": "agent_skill",
         "UI_UX_PRO_MAX": "agent_skill",
         "HIGGSFIELD": "remote_mcp",
@@ -66,6 +70,41 @@ def make_attestation(
 
 
 class IntegrationPreflightTests(unittest.TestCase):
+    def test_visual_reference_apis_require_oauth_evidence_and_attribution(self):
+        for provider_id, endpoint in (
+            ("PINTEREST_API", "https://api.pinterest.com/v5/user_account"),
+            ("DRIBBBLE_API", "https://api.dribbble.com/v2/user"),
+        ):
+            with self.subTest(provider=provider_id):
+                att = make_attestation(
+                    provider_id,
+                    endpoint=endpoint,
+                    capabilities=["read_visual_references", "record_attribution"],
+                    evidence=[
+                        "oauth_scope_receipt", "api_identity_probe_receipt",
+                        "reference_sample_receipt", "attribution_record",
+                    ],
+                    operations=["authenticated_read_reference", "record_attribution"],
+                )
+                result = evaluate_attestation(provider_id, att, secret=SECRET, now=NOW)
+                self.assertEqual(result.state, "OPERATIONAL")
+
+    def test_visual_reference_api_lookalike_endpoints_are_rejected(self):
+        for provider_id, endpoint in (
+            ("PINTEREST_API", "https://api.pinterest.com.evil.example/v5/user_account"),
+            ("DRIBBBLE_API", "https://api.dribbble.com.evil.example/v2/user"),
+            ("DRIBBBLE_API", "https://api.dribbble.com/v3/user"),
+        ):
+            with self.subTest(provider=provider_id, endpoint=endpoint):
+                att = make_attestation(
+                    provider_id, endpoint=endpoint,
+                    capabilities=["read_visual_references", "record_attribution"],
+                    evidence=["oauth_scope_receipt", "api_identity_probe_receipt",
+                              "reference_sample_receipt", "attribution_record"],
+                )
+                result = evaluate_attestation(provider_id, att, secret=SECRET, now=NOW)
+                self.assertEqual(result.state, "INVALID_ATTESTATION")
+
     def test_no_attestation_never_claims_connected(self):
         result = evaluate_attestation("HIGGSFIELD", None, secret=SECRET, now=NOW)
         self.assertEqual(result.state, "NOT_CONFIGURED")
@@ -179,12 +218,16 @@ class IntegrationPreflightTests(unittest.TestCase):
             "design_intelligence_integrations": [{"integration_id": "UI_UX_PRO_MAX"}],
             "media_generation_provider": {"provider_id": "HIGGSFIELD"},
             "communication_integrations": [{"integration_id": "WHATSAPP_BUSINESS_CLOUD_API"}],
+            "visual_reference_sources": [
+                {"source_id": "PINTEREST", "access_modes": [{"mode": "official_api_v5"}]},
+                {"source_id": "DRIBBBLE", "access_modes": [{"mode": "official_api_v2"}]},
+            ],
         }
         with tempfile.TemporaryDirectory() as temp:
             result = preflight(config, temp, secret=None, now=NOW)
         self.assertEqual(result["status"], "PARTIAL")
         self.assertEqual(result["operational_count"], 0)
-        self.assertEqual(result["integration_count"], 4)
+        self.assertEqual(result["integration_count"], 6)
         self.assertTrue(all(x["state"] == "NOT_CONFIGURED" for x in result["checks"]))
         self.assertFalse(result["safety"]["external_calls_made"])
         self.assertFalse(result["safety"]["paid_jobs_submitted"])
