@@ -372,12 +372,13 @@ class VXActivationEvidenceJournal:
         if event.get("event_type") != "VLNS_MODEL_ACTIVATION_CONFIRMED":
             return {"ok": False, "status": "LOCAL_EVENT_TYPE_INVALID"}
         event_id = "vlns-activation:" + activation_id
-        db_path = self.path
-        if db_path != ":memory:":
-            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+        if self.path != ":memory:":
+            Path(self.path).parent.mkdir(parents=True, exist_ok=True)
+
+        connection: sqlite3.Connection | None = None
         try:
-            with sqlite3.connect(db_path) as connection:
-                connection.execute("PRAGMA journal_mode=WAL")
+            connection = sqlite3.connect(self.path)
+            with connection:
                 connection.execute("PRAGMA synchronous=FULL")
                 connection.execute(
                     """CREATE TABLE IF NOT EXISTS activation_events (
@@ -414,6 +415,7 @@ class VXActivationEvidenceJournal:
                                      "sequence": existing[0], "ledger_head": head[0] if head else "GENESIS"},
                         }
                     return {"ok": False, "status": "LOCAL_VX_EVENT_ID_COLLISION_OR_LEDGER_INVALID"}
+
                 head = connection.execute(
                     "SELECT event_hash FROM activation_events ORDER BY sequence DESC LIMIT 1"
                 ).fetchone()
@@ -437,7 +439,6 @@ class VXActivationEvidenceJournal:
                     (event_id, body["event_type"], activation_id, body["actor_id"], body["capability"],
                      payload_json, created_at, previous_hash, event_hash),
                 )
-                connection.commit()
                 if not self.verify_integrity(connection):
                     return {"ok": False, "status": "LOCAL_VX_LEDGER_INTEGRITY_FAILED"}
                 return {
@@ -450,6 +451,9 @@ class VXActivationEvidenceJournal:
                 }
         except (OSError, sqlite3.Error, TypeError, ValueError) as exc:
             return {"ok": False, "status": "LOCAL_VX_EVIDENCE_WRITE_FAILED:" + type(exc).__name__}
+        finally:
+            if connection is not None:
+                connection.close()
 
     def verify_integrity(self, connection: sqlite3.Connection | None = None) -> bool:
         owned = connection is None
