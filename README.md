@@ -85,3 +85,14 @@ Every specialist agent should receive a role/version-bound `BoundEngineeringTool
 - Tests: `tests/test_engineering_tools.py`
 
 **Status boundary:** local gate enforcement is implemented and unit-tested on the feature branch; receipts are still process-local, canonical policy binding and durable VAIXLNS Event/Ledger integration are not yet admitted. This is not a production security claim. The handler adapters still need their own timeouts/cancellation; the dispatcher cannot stop a handler already running.
+
+
+## Closed-loop archive, server reconnaissance and repair agents
+
+The governed workflow now has a proposed additive lane for source-backed repository/server inventory, zero-loss archive indexing, index reconciliation, compiler/toolchain support, code repair planning and development/CI automation. The lifecycle controller requires explicit evidence for tests against the exact artifact, independent verification, fresh proof, governance and deployment authority, rollback, observation, quarantine, replay and regression.
+
+- Controller: `src/vx_agents_fabric/closed_loop.py`
+- Dedicated tests: `tests/test_closed_loop.py`
+- Source/endpoint limits: `docs/server_repository_inventory_v1.md`
+
+This remains a reviewable, non-production surface. Private endpoints are not probed merely because they appear in an archive; external providers, sandbox/solver gateways and canonical durable-ledger bindings require separate configuration and admission.
