@@ -4,9 +4,13 @@ from __future__ import annotations
 import base64
 import json
 import unittest
+from datetime import datetime, timedelta, timezone
 
+from vx_agents_fabric.contracts import AgentSpec
+from vx_agents_fabric.registry import AgentRegistry, default_registry
 from vx_agents_fabric.engineering_tools import (
     BoundEngineeringToolDispatcher,
+    bind_registered_agent_tool_dispatcher,
     ToolAccessPolicy,
     GitHubReadOnlyAdapter,
     build_engineering_tool_hub,
@@ -114,6 +118,226 @@ class ToolHubPolicyTests(unittest.TestCase):
             "github.fetch_file", "sandbox.execute_python", "engineering.solver.submit",
             "math.evaluate", "math.solve_linear_system", "engineering.convert_units",
         }.issubset(ids))
+
+
+    def test_dispatcher_emits_vx_decision_and_hash_chained_receipt(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-TEST", role_version="1.0.0",
+            caller_family="engineering", authority_scope="analysis",
+            capabilities=("math_evaluation",),
+            allowed_tool_ids=("math.evaluate",),
+        )
+        dispatcher = BoundEngineeringToolDispatcher(self.hub, policy)
+        result = dispatcher.invoke("math.evaluate", {"expression": "6*7"})
+        self.assertEqual(result.status, "COMPLETED")
+        self.assertEqual(result.control_decision["gate"], "VX_FEDERATION_GATE")
+        self.assertEqual(result.control_decision["decision"], "ALLOW")
+        self.assertEqual(result.control_decision["execution_status"], "COMPLETED")
+        self.assertEqual(len(dispatcher.control_events), 1)
+        event = dispatcher.control_events[0]
+        self.assertEqual(event["execution_status"], "COMPLETED")
+        self.assertEqual(event["previous_event_sha256"], "0" * 64)
+        self.assertEqual(len(event["event_sha256"]), 64)
+        self.assertNotIn("arguments", event)
+        self.assertTrue(dispatcher.control_gate.verify_event_chain())
+
+    def test_dispatcher_budget_stops_additional_tool_calls(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-TEST", role_version="1.0.0",
+            caller_family="engineering", authority_scope="analysis",
+            capabilities=("math_evaluation",),
+            allowed_tool_ids=("math.evaluate",),
+            max_tool_calls=1,
+        )
+        dispatcher = BoundEngineeringToolDispatcher(self.hub, policy)
+        first = dispatcher.invoke("math.evaluate", {"expression": "2+2"})
+        second = dispatcher.invoke("math.evaluate", {"expression": "3+3"})
+        self.assertEqual(first.status, "COMPLETED")
+        self.assertEqual(second.status, "BLOCKED")
+        self.assertEqual(second.error_code, "vx_budget_tool_call_limit")
+        self.assertEqual(second.control_decision["execution_status"], "NOT_EXECUTED")
+        self.assertEqual(len(dispatcher.control_events), 2)
+        self.assertTrue(dispatcher.control_gate.verify_event_chain())
+
+    def test_emergency_stop_blocks_bound_tool_before_execution(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-TEST", role_version="1.0.0",
+            caller_family="engineering", authority_scope="analysis",
+            capabilities=("math_evaluation",),
+            allowed_tool_ids=("math.evaluate",),
+        )
+        dispatcher = BoundEngineeringToolDispatcher(self.hub, policy)
+        dispatcher.activate_emergency_stop("test_stop")
+        result = dispatcher.invoke("math.evaluate", {"expression": "2+2"})
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertEqual(result.control_decision["decision"], "REJECT")
+        self.assertEqual(result.error_code, "emergency_stop_active:test_stop")
+        self.assertEqual(result.control_decision["execution_status"], "NOT_EXECUTED")
+        with self.assertRaisesRegex(PermissionError, "authorized_operator"):
+            dispatcher.clear_emergency_stop(authorized=False)
+        self.assertTrue(dispatcher.control_gate.verify_event_chain())
+
+    def test_dispatcher_rejects_unbounded_host_policy(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-TEST", role_version="1.0.0",
+            caller_family="engineering", authority_scope="analysis",
+            capabilities=("math_evaluation",),
+            allowed_tool_ids=("math.evaluate",),
+            max_tool_calls=257,
+        )
+        with self.assertRaisesRegex(ValueError, "max_tool_calls_out_of_hard_bounds"):
+            BoundEngineeringToolDispatcher(self.hub, policy)
+
+
+    def test_only_admitted_registry_roles_can_receive_tool_dispatchers(self):
+        registry = default_registry()
+        with self.assertRaisesRegex(PermissionError, "agent_not_admitted_for_tool_access"):
+            bind_registered_agent_tool_dispatcher(
+                self.hub, registry, "VX-ENG-TEST", allowed_tool_ids=("math.evaluate",)
+            )
+
+    def test_admitted_registry_role_is_bound_to_vx_gate(self):
+        spec = AgentSpec(
+            role_id="VX-ENG-MATH-TEST",
+            name="Admitted math tool test role",
+            family="engineering",
+            version="1.0.0",
+            capabilities=("math_evaluation",),
+            inputs=("expression",),
+            outputs=("numeric_result",),
+            authority_scope="analysis",
+            admission_status="ADMITTED",
+        )
+        registry = AgentRegistry()
+        registry.register(spec)
+        dispatcher = bind_registered_agent_tool_dispatcher(
+            self.hub, registry, spec.role_id,
+            allowed_tool_ids=("math.evaluate",),
+        )
+        result = dispatcher.invoke("math.evaluate", {"expression": "40+2"})
+        self.assertEqual(result.status, "COMPLETED")
+        self.assertEqual(result.result["value"], 42.0)
+        self.assertEqual(result.control_decision["gate"], "VX_FEDERATION_GATE")
+        self.assertEqual(result.control_decision["actor"]["role_id"], spec.role_id)
+
+    def test_agent_factory_rejects_unregistered_tool_names(self):
+        spec = AgentSpec(
+            role_id="VX-ENG-MATH-TEST",
+            name="Admitted math tool test role",
+            family="engineering",
+            version="1.0.0",
+            capabilities=("math_evaluation",),
+            inputs=("expression",),
+            outputs=("numeric_result",),
+            authority_scope="analysis",
+            admission_status="ADMITTED",
+        )
+        registry = AgentRegistry()
+        registry.register(spec)
+        with self.assertRaisesRegex(ValueError, "unregistered_tools"):
+            bind_registered_agent_tool_dispatcher(
+                self.hub, registry, spec.role_id, allowed_tool_ids=("shell.unrestricted",)
+            )
+
+
+    def test_sensitive_tool_approval_is_bound_to_exact_action_digest(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-BUILD", role_version="1.0.0",
+            caller_family="engineering", authority_scope="sandbox",
+            capabilities=(),
+            allowed_tool_ids=("sandbox.execute_python",),
+            explicitly_approved_tool_ids=("sandbox.execute_python",),
+        )
+
+        def verify_signature(record, context):
+            # Test verifier only. Production must validate a real signed approval from a trusted authority.
+            return record.get("signature") == "valid-test-signature" and (
+                record.get("approved_action_digest") == context.get("action_digest")
+            )
+
+        dispatcher = BoundEngineeringToolDispatcher(
+            self.hub, policy, approval_verifier=verify_signature
+        )
+        arguments = {"code": "print(1)"}
+        prepared = dispatcher.prepare_action("sandbox.execute_python", arguments)
+        approval = {
+            "status": "APPROVED",
+            "approved_action_digest": prepared["action_digest"],
+            "action_id": prepared["action_id"],
+            "tool_id": prepared["tool_id"],
+            "tool_version": prepared["tool_version"],
+            "role_id": prepared["actor"]["role_id"],
+            "role_version": prepared["actor"]["role_version"],
+            "authority_scope": prepared["scope"],
+            "policy_digest": prepared["policy_digest"],
+            "input_sha256": prepared["input_sha256"],
+            "idempotency_key": prepared["idempotency_key"],
+            "valid_until": (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat(),
+            "approver_id": "human:independent-reviewer",
+            "independent": True,
+            "signature": "valid-test-signature",
+        }
+        result = dispatcher.invoke(
+            "sandbox.execute_python", arguments, approval_record=approval
+        )
+        self.assertEqual(result.status, "NOT_CONFIGURED")
+        self.assertEqual(result.control_decision["decision"], "ALLOW")
+        self.assertEqual(result.control_decision["execution_status"], "NOT_CONFIGURED")
+        self.assertTrue(dispatcher.control_gate.verify_event_chain())
+
+    def test_sensitive_tool_approval_cannot_be_reused_for_changed_inputs(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-BUILD", role_version="1.0.0",
+            caller_family="engineering", authority_scope="sandbox",
+            capabilities=(),
+            allowed_tool_ids=("sandbox.execute_python",),
+            explicitly_approved_tool_ids=("sandbox.execute_python",),
+        )
+        dispatcher = BoundEngineeringToolDispatcher(
+            self.hub, policy,
+            approval_verifier=lambda record, context: record.get("signature") == "valid-test-signature",
+        )
+        prepared = dispatcher.prepare_action(
+            "sandbox.execute_python", {"code": "print(1)"}
+        )
+        approval = {
+            "status": "APPROVED",
+            "approved_action_digest": prepared["action_digest"],
+            "action_id": prepared["action_id"],
+            "tool_id": prepared["tool_id"],
+            "tool_version": prepared["tool_version"],
+            "role_id": prepared["actor"]["role_id"],
+            "role_version": prepared["actor"]["role_version"],
+            "authority_scope": prepared["scope"],
+            "policy_digest": prepared["policy_digest"],
+            "input_sha256": prepared["input_sha256"],
+            "idempotency_key": prepared["idempotency_key"],
+            "valid_until": (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat(),
+            "approver_id": "human:independent-reviewer",
+            "independent": True,
+            "signature": "valid-test-signature",
+        }
+        result = dispatcher.invoke(
+            "sandbox.execute_python", {"code": "print(2)"}, approval_record=approval
+        )
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertEqual(result.error_code, "explicit_approval_required")
+        self.assertEqual(result.control_decision["execution_status"], "NOT_EXECUTED")
+
+    def test_tool_id_allowlist_alone_is_not_sensitive_action_approval(self):
+        policy = ToolAccessPolicy(
+            role_id="VX-ENG-BUILD", role_version="1.0.0",
+            caller_family="engineering", authority_scope="sandbox",
+            capabilities=(),
+            allowed_tool_ids=("sandbox.execute_python",),
+            explicitly_approved_tool_ids=("sandbox.execute_python",),
+        )
+        dispatcher = BoundEngineeringToolDispatcher(self.hub, policy)
+        result = dispatcher.invoke(
+            "sandbox.execute_python", {"code": "print(7)"}
+        )
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertEqual(result.error_code, "explicit_approval_required")
 
 
 class GitHubAdapterTests(unittest.TestCase):

@@ -47,7 +47,16 @@ The endpoint accepts POST JSON containing solver, job (a JSON object), and reque
 
 ## Using the hub from a specialist adapter
 
-Call build_engineering_tool_hub() at adapter startup, then create a BoundEngineeringToolDispatcher from a host-constructed ToolAccessPolicy pinned to role_id, role_version, caller family, authority scope, capabilities, tool allowlist, and pre-approved tool IDs. Never allow the model to provide or alter that policy. Invoke tools through the bound dispatcher, preserve ToolEvidence alongside the produced artifact, and attach the result to the VX workflow lineage. Tool outputs must be independently checked where correctness matters; source hashes alone are not verification. The existing EngineeringOrchestrator remains responsible for workflow lineage and failures, while VAIXLNS retains canonical governance/admission.
+Call build_engineering_tool_hub() at host startup. For each task-scoped role, use `bind_registered_agent_tool_dispatcher(hub, registry, role_id, ...)` so the role identity, version, family, authority scope and capabilities are taken from the trusted AgentRegistry. Only roles whose admission_status is ADMITTED, VERIFIED or OPERATIONALLY_FINAL can be bound by this factory; the default registry's DESIGN_ONLY roles remain unable to receive tool access. Keep the dispatcher scoped to the task/workflow lifetime, since its elapsed-time and call budgets are per dispatcher. Never allow the model to provide or alter its policy/allowlist. Invoke tools through the bound dispatcher, preserve ToolEvidence and the control receipt alongside the produced artifact, and attach the result to VX workflow lineage. Tool outputs must be independently checked where correctness matters; source hashes alone are not verification. The existing EngineeringOrchestrator remains responsible for workflow lineage and failures, while VAIXLNS retains canonical governance/admission.
+
+
+## Universal VX action-time gate
+
+Every agent-to-tool request must use `BoundEngineeringToolDispatcher`, which is bound to one immutable host-constructed role/version policy. Do not inject the low-level `EngineeringToolHub` into a model or agent adapter. The dispatcher now evaluates the tool allowlist, role family, exact authority scope, declared capabilities, explicit-approval requirement, input limits, per-dispatcher call budget and elapsed-time budget before it invokes a handler.
+
+Each attempted invocation returns a `control_decision` and appends a process-local hash-chained control receipt to `dispatcher.control_events`. Receipts include actor/version, tool/version, scope, policy digest, input digest, decision/reason, execution status and output digest; raw arguments and secret values are not copied into the receipt. The emergency stop blocks new calls through that dispatcher. Clearing it requires `authorized=True`, which must only be set by a trusted operator path.
+
+This is an executable local reference gate, not yet the full canonical STCF runtime. The event chain is held in process memory and the policy digest is local to the bound role policy. Before production admission, connect decisions/receipts to the durable VAIXLNS Event/Ledger, use atomic idempotency records, bind the exact canonical policy and action-envelope schema, authenticate actor identity/signatures, and verify that no adapter can bypass the bound dispatcher. The gate does not terminate an already-running handler mid-call; individual adapters still require their own hard timeout and cancellation behavior.
 
 ## Verification
 

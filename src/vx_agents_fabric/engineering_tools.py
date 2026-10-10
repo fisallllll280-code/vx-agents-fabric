@@ -8,11 +8,17 @@ import json
 import math
 import os
 import re
+import secrets
+import time
+from datetime import datetime, timezone
 import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Mapping
+
+from .tool_control import VXToolControlGate
+from .registry import AgentRegistry
 
 JSONMap = dict[str, Any]
 OpenUrl = Callable[..., Any]
@@ -54,6 +60,7 @@ class ToolResult:
     result: Mapping[str, Any] = field(default_factory=dict)
     error_code: str | None = None
     evidence: ToolEvidence | None = None
+    control_decision: Mapping[str, Any] | None = None
 
     def to_dict(self) -> JSONMap:
         return asdict(self)
@@ -462,13 +469,24 @@ class ToolAccessPolicy:
     authority_scope: str
     capabilities: tuple[str, ...]
     allowed_tool_ids: tuple[str, ...]
+    # This is an allowlist for actions eligible for an approval workflow, not approval itself.
     explicitly_approved_tool_ids: tuple[str, ...] = ()
+    max_tool_calls: int = 64
+    max_total_input_bytes: int = 1_000_000
+    max_input_bytes_per_call: int = 1_000_000
+    max_elapsed_seconds: float = 300.0
 
 
 class BoundEngineeringToolDispatcher:
     """Bind a tool hub to one immutable specialist policy before exposing it to a provider."""
 
-    def __init__(self, hub: EngineeringToolHub, policy: ToolAccessPolicy) -> None:
+    def __init__(
+        self,
+        hub: EngineeringToolHub,
+        policy: ToolAccessPolicy,
+        *,
+        approval_verifier: Callable[[Mapping[str, Any], Mapping[str, Any]], bool] | None = None,
+    ) -> None:
         if not policy.role_id or not policy.role_version or not policy.caller_family:
             raise ValueError("role_identity_and_family_required")
         if len(set(policy.allowed_tool_ids)) != len(policy.allowed_tool_ids):
@@ -477,16 +495,219 @@ class BoundEngineeringToolDispatcher:
             raise ValueError("approved_tools_must_be_in_role_allowlist")
         self.hub = hub
         self.policy = policy
+        self.approval_verifier = approval_verifier
+        self._session_nonce = secrets.token_hex(16)
+        self.control_gate = VXToolControlGate(
+            max_tool_calls=policy.max_tool_calls,
+            max_total_input_bytes=policy.max_total_input_bytes,
+            max_elapsed_seconds=policy.max_elapsed_seconds,
+        )
+        self._started_at = time.monotonic()
+        self._attempted_calls = 0
+        self._cumulative_input_bytes = 0
 
-    def invoke(self, tool_id: str, arguments: Mapping[str, Any]) -> ToolResult:
-        if tool_id not in self.policy.allowed_tool_ids:
-            return ToolResult("BLOCKED", tool_id, error_code="tool_not_in_role_allowlist")
-        return self.hub.invoke(
+    @property
+    def control_events(self) -> tuple[dict[str, Any], ...]:
+        """Hash-chained receipts for this dispatcher process; durable ledger binding is separate."""
+        return self.control_gate.events
+
+    def activate_emergency_stop(self, reason: str = "operator_stop") -> None:
+        self.control_gate.activate_emergency_stop(reason)
+
+    def clear_emergency_stop(self, *, authorized: bool = False) -> None:
+        self.control_gate.clear_emergency_stop(authorized=authorized)
+
+    def prepare_action(self, tool_id: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
+        """Prepare a unique action digest so an external approval can bind to exact inputs."""
+        spec = self.hub._specs.get(tool_id)
+        try:
+            raw = canonical_json(dict(arguments)).encode("utf-8")
+        except (TypeError, ValueError):
+            raw = b""
+        input_sha256 = hashlib.sha256(raw).hexdigest()
+        attempt_number = self._attempted_calls
+        idempotency_key = "VX-IDEM-" + sha256_json({
+            "session_nonce": self._session_nonce,
+            "role_id": self.policy.role_id,
+            "role_version": self.policy.role_version,
+            "attempt": attempt_number,
+            "tool_id": tool_id,
+            "input_sha256": input_sha256,
+        })
+        action_id = "VX-ACT-" + sha256_json({
+            "session_nonce": self._session_nonce,
+            "attempt": attempt_number,
+            "role_id": self.policy.role_id,
+            "role_version": self.policy.role_version,
+            "tool_id": tool_id,
+            "input_sha256": input_sha256,
+        })[:20]
+        context = {
+            "schema_version": "1.0.0",
+            "action_id": action_id,
+            "actor": {"role_id": self.policy.role_id, "role_version": self.policy.role_version},
+            "tool_id": tool_id,
+            "tool_version": spec.version if spec is not None else "UNKNOWN",
+            "scope": self.policy.authority_scope,
+            "caller_family": self.policy.caller_family,
+            "policy_digest": sha256_json(asdict(self.policy)),
+            "input_sha256": input_sha256,
+            "input_bytes": len(raw),
+            "idempotency_key": idempotency_key,
+        }
+        context["action_digest"] = sha256_json(context)
+        return context
+
+    def _verify_action_approval(
+        self,
+        record: Mapping[str, Any] | None,
+        context: Mapping[str, Any],
+    ) -> bool:
+        """Require an exact action-bound approval plus a trusted signature verifier."""
+        if not record or self.approval_verifier is None:
+            return False
+        if record.get("status") != "APPROVED":
+            return False
+        if record.get("approved_action_digest") != context.get("action_digest"):
+            return False
+        bound_fields = {
+            "action_id": context.get("action_id"),
+            "tool_id": context.get("tool_id"),
+            "tool_version": context.get("tool_version"),
+            "role_id": context.get("actor", {}).get("role_id"),
+            "role_version": context.get("actor", {}).get("role_version"),
+            "authority_scope": context.get("scope"),
+            "policy_digest": context.get("policy_digest"),
+            "input_sha256": context.get("input_sha256"),
+            "idempotency_key": context.get("idempotency_key"),
+        }
+        if any(record.get(key) != expected for key, expected in bound_fields.items()):
+            return False
+        valid_until_raw = record.get("valid_until")
+        try:
+            valid_until = datetime.fromisoformat(str(valid_until_raw).replace("Z", "+00:00"))
+            if valid_until.tzinfo is None or valid_until.astimezone(timezone.utc) <= datetime.now(timezone.utc):
+                return False
+        except (TypeError, ValueError):
+            return False
+        approver_id = str(record.get("approver_id", ""))
+        actor_id = str(context.get("actor", {}).get("role_id", ""))
+        if not approver_id or approver_id in {actor_id, actor_id + "@" + str(context.get("actor", {}).get("role_version", ""))}:
+            return False
+        if record.get("independent") is not True:
+            return False
+        try:
+            return self.approval_verifier(record, context) is True
+        except Exception:
+            return False
+
+    def invoke(
+        self,
+        tool_id: str,
+        arguments: Mapping[str, Any],
+        *,
+        approval_record: Mapping[str, Any] | None = None,
+    ) -> ToolResult:
+        spec = self.hub._specs.get(tool_id)
+        attempt_number = self._attempted_calls
+        action_context = self.prepare_action(tool_id, arguments)
+        self._attempted_calls += 1
+        input_bytes = int(action_context["input_bytes"])
+        idempotency_key = str(action_context["idempotency_key"])
+        approved = bool(
+            spec is not None
+            and spec.requires_explicit_approval
+            and tool_id in self.policy.explicitly_approved_tool_ids
+            and self._verify_action_approval(approval_record, action_context)
+        )
+        decision = self.control_gate.evaluate(
+            policy=self.policy,
+            tool_spec=spec,
+            tool_id=tool_id,
+            arguments=arguments,
+            explicit_approval=approved,
+            attempted_calls=attempt_number,
+            cumulative_input_bytes=self._cumulative_input_bytes,
+            elapsed_seconds=time.monotonic() - self._started_at,
+            idempotency_key=idempotency_key,
+            action_context=action_context,
+        )
+        if decision["decision"] != "ALLOW":
+            self._cumulative_input_bytes += input_bytes
+            receipt = self.control_gate.record(
+                decision, execution_status="NOT_EXECUTED", error_code=decision["reason_code"]
+            )
+            decision = {**decision, "execution_status": "NOT_EXECUTED", "receipt": receipt}
+            return ToolResult(
+                "BLOCKED", tool_id, error_code=decision["reason_code"],
+                control_decision=decision,
+            )
+
+        self._cumulative_input_bytes += input_bytes
+        result = self.hub.invoke(
             tool_id,
             arguments,
             caller_family=self.policy.caller_family,
             authority_scope=self.policy.authority_scope,
             caller_capabilities=self.policy.capabilities,
-            explicit_approval=tool_id in self.policy.explicitly_approved_tool_ids,
+            explicit_approval=approved,
+        )
+        output_sha256 = result.evidence.output_sha256 if result.evidence else None
+        receipt = self.control_gate.record(
+            decision, execution_status=result.status,
+            output_sha256=output_sha256, error_code=result.error_code,
+        )
+        control_decision = {
+            **decision,
+            "execution_status": result.status,
+            "receipt": receipt,
+        }
+        return ToolResult(
+            result.status, result.tool_id, result.result, result.error_code,
+            result.evidence, control_decision,
         )
 
+
+
+def bind_registered_agent_tool_dispatcher(
+    hub: EngineeringToolHub,
+    registry: AgentRegistry,
+    role_id: str,
+    *,
+    role_version: str | None = None,
+    allowed_tool_ids: tuple[str, ...] = (),
+    explicitly_approved_tool_ids: tuple[str, ...] = (),
+    max_tool_calls: int = 64,
+    max_total_input_bytes: int = 1_000_000,
+    max_input_bytes_per_call: int = 1_000_000,
+    max_elapsed_seconds: float = 300.0,
+    approval_verifier: Callable[[Mapping[str, Any], Mapping[str, Any]], bool] | None = None,
+) -> BoundEngineeringToolDispatcher:
+    """Create a VX-bound dispatcher only from an admitted, versioned registry role.
+
+    Registry entries marked DESIGN_ONLY or otherwise not admitted cannot receive tool
+    access. All allowlists and budgets are host-side configuration, never model output.
+    """
+    spec = registry.resolve(role_id, role_version)
+    if spec.admission_status not in {"ADMITTED", "VERIFIED", "OPERATIONALLY_FINAL"}:
+        raise PermissionError("agent_not_admitted_for_tool_access:" + spec.key)
+    registered_tool_ids = set(hub._specs)
+    unknown_tools = set(allowed_tool_ids) - registered_tool_ids
+    if unknown_tools:
+        raise ValueError("tool_allowlist_contains_unregistered_tools:" + ",".join(sorted(unknown_tools)))
+    if not set(explicitly_approved_tool_ids).issubset(set(allowed_tool_ids)):
+        raise ValueError("approved_tools_must_be_in_role_allowlist")
+    policy = ToolAccessPolicy(
+        role_id=spec.role_id,
+        role_version=spec.version,
+        caller_family=spec.family,
+        authority_scope=spec.authority_scope,
+        capabilities=tuple(spec.capabilities),
+        allowed_tool_ids=tuple(allowed_tool_ids),
+        explicitly_approved_tool_ids=tuple(explicitly_approved_tool_ids),
+        max_tool_calls=max_tool_calls,
+        max_total_input_bytes=max_total_input_bytes,
+        max_input_bytes_per_call=max_input_bytes_per_call,
+        max_elapsed_seconds=max_elapsed_seconds,
+    )
+    return BoundEngineeringToolDispatcher(hub, policy, approval_verifier=approval_verifier)
