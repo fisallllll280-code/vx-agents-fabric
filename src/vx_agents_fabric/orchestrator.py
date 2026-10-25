@@ -139,10 +139,14 @@ class EngineeringOrchestrator:
         for stage, role_ids in PIPELINE:
             if stage == "SYSTEM_LANGUAGE_ENGINEERING":
                 language_request = context_payload.get("system_language_request")
+                symbol_request = context_payload.get("omega_symbol_request")
                 engineering_context = context_payload.get("engineering")
-                if not isinstance(language_request, Mapping) and isinstance(engineering_context, Mapping):
-                    language_request = engineering_context.get("system_language_request")
-                if not isinstance(language_request, Mapping):
+                if isinstance(engineering_context, Mapping):
+                    if not isinstance(language_request, Mapping):
+                        language_request = engineering_context.get("system_language_request")
+                    if not isinstance(symbol_request, Mapping):
+                        symbol_request = engineering_context.get("omega_symbol_request")
+                if not isinstance(language_request, Mapping) and not isinstance(symbol_request, Mapping):
                     continue
             for role_id in role_ids:
                 spec = self.registry.resolve(role_id, self.version_pins.get(role_id))
