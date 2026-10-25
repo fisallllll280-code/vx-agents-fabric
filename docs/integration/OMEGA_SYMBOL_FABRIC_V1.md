@@ -14,12 +14,12 @@ The first source domain is Unicode Emoji. This feature is a bounded subsystem of
 
 ## Authoritative source and version
 
-The supplied full-list chart is an illustrative view. UTS #51 identifies the versioned emoji data files, especially `emoji-test.txt`, as the implementation data source. Unicode 18.0 is the version recorded for this proposal as of 2026-10-25.
+The supplied full-list chart is an illustrative view. UTS #51 identifies versioned emoji data files, especially `emoji-test.txt`, as implementation data. The current file header reports Emoji 18.0, dated 2026-04-30; this proposal pins the 18.0 data directory rather than the moving `latest` alias.
 
 - Chart reference: https://unicode.org/emoji/charts/full-emoji-list.html
 - UTS #51: https://www.unicode.org/reports/tr51/
-- Versioned data index: https://www.unicode.org/Public/UCD/latest/emoji/
-- Emoji test data: https://www.unicode.org/Public/UCD/latest/emoji/emoji-test.txt
+- Versioned data index: https://www.unicode.org/Public/18.0.0/emoji/
+- Emoji test data: https://www.unicode.org/Public/18.0.0/emoji/emoji-test.txt
 
 Runtime import is offline. A trusted maintainer supplies a locally obtained, version-pinned file; the importer records the exact SHA-256 and rejects malformed UTF-8, invalid scalar values, duplicate sequences, unknown qualification states, oversize input, and an observed version mismatch. No network client fetches data at runtime. A release must pin an immutable versioned URL and reviewed checksum before the corpus can be admitted.
 
@@ -46,19 +46,19 @@ A parse pass establishes only that the supplied dataset was bounded, structurall
 
 ## Candidate NXL crosswalk
 
-The exact language names below were recovered from user project context. Their original grammar and semantics are not mounted in this repository. These are candidate responsibilities only; no syntax is invented, and every language adapter remains `HOLD` until its source specification is recovered and reviewed.
+The exact language definitions were recovered from `nexent/languages.py` at commit `f62cf5920174551f9a8f88deb420f9515bedc284`. The source declares all nine languages PROPOSED; its grammar and semantic fields are placeholders, and the master engineering document explicitly says a complete language/compiler/runtime remains incomplete. The responsibilities below are bounded Ω-SYMBOL crosswalk proposals based on each recovered language purpose. They do not create a grammar or claim NXL compilation. The source language project remains untouched.
 
 | Language | Candidate responsibility | Current gate |
 |---|---|---|
-| `NXL-S` | Exact symbol literal and escape surface | Grammar not mounted |
-| `NXL-SYS` | Versioned symbol identity and registry contract | Semantics not configured |
-| `NXL-ARCH` | Isolation boundaries between source, parser, IR, and renderers | Architecture mapping proposed |
-| `NXL-CON` | Input, version, integrity, and authority constraints | Contract mapping proposed |
-| `NXL-PROOF` | Source provenance, hash, parser evidence, and conformance claims | Proof rules not configured |
+| `NXL-S` | Localized symbol-label/meaning claims with source and locale | PROPOSED; semantics and grammar remain placeholders |
+| `NXL-SYS` | Versioned symbol registry declarations; code-point sequence is identity | PROPOSED; semantics and grammar remain placeholders |
+| `NXL-ARCH` | Source, parser, IR, office, renderer, and evidence boundaries | PROPOSED; compiler/runtime not implemented |
+| `NXL-CON` | Preconditions, postconditions, and invariants for offline import | PROPOSED; contract semantics not formalized |
+| `NXL-PROOF` | Source hash, dataset membership, parser fingerprint, bounded claims | PROPOSED; proof rules not formalized |
 | `NXL-EXEC` | Read-only runtime lookup request/response contract | Runtime semantics not configured |
-| `NXL-EVO` | Append-only Unicode version diff and deprecation lineage | Evolution rules not configured |
+| `NXL-EVO` | Append-only release diffs, deprecations, and lineage | PROPOSED; evolution rules not formalized |
 | `NXL-Q` | Typed search/filter query over the registry | Query grammar not mounted |
-| `NXL-VIS` | Rendering, fallback glyph, accessibility label, and platform capability contract | Renderer not configured |
+| `NXL-VIS` | Derived display declarations, accessibility labels, and platform fallback | PROPOSED; renderer/runtime not implemented |
 
 The bridge can generate a neutral Ω-SYMBOL IR from a pinned dataset. It must not emit NXL source until the source grammars, types, semantics, and compiler targets are recovered. Translation and canonical admission remain `HOLD`.
 
