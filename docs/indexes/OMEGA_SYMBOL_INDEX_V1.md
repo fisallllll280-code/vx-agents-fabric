@@ -8,7 +8,11 @@
 
 ## Scope
 
-Versioned Unicode Emoji data is indexed as exact code-point sequences. The official chart is a discovery/display reference; UTS #51 data files provide the versioned implementation source. The current proposal pins Emoji 18.0 as the target version. See [the specification](../integration/OMEGA_SYMBOL_FABRIC_V1.md).
+Versioned Unicode Emoji data is indexed as exact code-point sequences. The official chart is a discovery/display reference; UTS #51 data files provide the versioned implementation source. The current proposal pins Emoji 18.0 as the target version at `https://www.unicode.org/Public/18.0.0/emoji/emoji-test.txt`. See [the specification](../integration/OMEGA_SYMBOL_FABRIC_V1.md).
+
+## NXL source and current maturity
+
+The NEXENT source at commit `f62cf5920174551f9a8f88deb420f9515bedc284` defines the nine language names and roles. Its current registry marks all nine PROPOSED and uses placeholder grammar/semantics fields; it does not provide formal grammars or executable compilers. Ω-SYMBOL records a candidate crosswalk for every language and keeps compilation on HOLD.
 
 ## Atomic inventory record
 
