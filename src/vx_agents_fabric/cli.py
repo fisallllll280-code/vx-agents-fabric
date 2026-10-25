@@ -13,6 +13,7 @@ from typing import Any, Mapping, Sequence
 
 from .orchestrator import EngineeringOrchestrator
 from .language_orchestrator_adapter import build_orchestrator_adapter
+from .innovation_factory import build_innovation_adapter
 from .providers import build_from_env
 from .registry import AgentRegistry, default_registry
 
@@ -49,7 +50,7 @@ def report_payload(report: Any, orchestrator: EngineeringOrchestrator,
         "provider_bindings": {
             "endpoint_configured": provider_bindings.enabled,
             "configured_agent_versions": sorted(provider_bindings.agent_adapters),
-            "local_control_adapters": ["VX-ENG-LANG@1.0.0"],
+            "local_control_adapters": ["VX-ENG-LANG@1.0.0", "VX-ENG-INNOV@1.0.0"],
             "unconfigured_agent_versions": list(provider_bindings.unconfigured_agent_versions),
             "configured_parent_minds": sorted(provider_bindings.mind_adapters),
             "unconfigured_parent_minds": list(provider_bindings.unconfigured_minds),
@@ -158,6 +159,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             symbol_profile_path=symbol_profile,
             symbol_data_path=symbol_data,
         )
+        innovation_spec = registry.resolve("VX-ENG-INNOV")
+        local_adapters[innovation_spec.key] = build_innovation_adapter()
         pins = version_pins_from_env(registry)
         workflow_id = args.workflow_id or "WF-" + __import__("hashlib").sha256(
             (goal + "\0" + str(context)).encode("utf-8")
