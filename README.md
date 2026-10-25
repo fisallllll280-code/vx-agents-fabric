@@ -100,3 +100,12 @@ The command returns exit code 0 only when it produces a candidate eligible for s
 - Runtime connection claims require fresh HMAC-signed host-probe receipts; this command performs no external requests, sends no WhatsApp messages and does not generate paid media.
 
 These are versioned integration specifications and examples. WhatsApp is specified through the official Meta Cloud API but remains NOT_CONFIGURED until business assets, protected credentials, verified HTTPS webhooks and inbound/outbound acceptance tests are proven. A routing declaration does not prove a provider or skill is live-connected. Paid image/video generation requires actual tool discovery, price visibility, an explicit cost ceiling and user approval. Superpowers is a host skill workflow; Higgsfield exposes an official remote MCP endpoint. Live connection status remains evidence-gated.
+
+
+## Ω-SYMBOL Unicode fabric
+
+- [Ω-SYMBOL Fabric v1](docs/integration/OMEGA_SYMBOL_FABRIC_V1.md)
+- [Ω-SYMBOL index](docs/indexes/OMEGA_SYMBOL_INDEX_V1.md)
+- Office brief: `docs/prompts/OMEGA_SYMBOL_OFFICE_BRIEF_V1.md`
+- Offline bounded importer: `PYTHONPATH=src python -m vx_agents_fabric.omega_symbol_fabric --source-file <local-emoji-test.txt> --version 18.0 --sha256 <reviewed-sha256>`
+- The import creates a neutral symbol IR only; all recovered NXL targets remain PROPOSAL/HOLD until their grammars and semantics are sourced.
