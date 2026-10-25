@@ -31,6 +31,10 @@ Requires Python 3.10+ and no runtime third-party dependencies.
 
 See docs/architecture.md for integration contracts. This repository is a coordination scaffold: model/provider connectivity, durable storage and live execution adapters must be configured and validated separately.
 
+## Index catalog and innovation packets
+
+See [the VX master index and tool catalog](docs/indexes/VX_MASTER_INDEX_CATALOG_V1.md) for pinned VAIXLNS, NEXENT and VX index sources, tool availability and known recovery gaps. Submit an explicit `engineering.innovation_request` in the context JSON to invoke the deterministic, local `VX-ENG-INNOV` packet builder. It creates a replayable proposal with source pointers, constraints, tool routes, acceptance criteria and blockers; index lookup, simulation, code execution, validation and canonical admission remain NOT_RUN until their adapters and evidence are connected.
+
 
 ## Optional model connections
 
