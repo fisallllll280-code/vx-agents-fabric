@@ -10,8 +10,8 @@
     "emoji_version": "18.0",
     "source_policy": "PINNED_VERSIONED_DATA_ONLY",
     "chart_reference": "https://unicode.org/emoji/charts/full-emoji-list.html",
-    "normative_data_directory": "https://www.unicode.org/Public/UCD/latest/emoji/",
-    "normative_test_file": "https://www.unicode.org/Public/UCD/latest/emoji/emoji-test.txt",
+    "normative_data_directory": "https://www.unicode.org/Public/18.0.0/emoji/",
+    "normative_test_file": "https://www.unicode.org/Public/18.0.0/emoji/emoji-test.txt",
     "expected_sha256": null,
     "version_observed_on": "2026-10-25",
     "runtime_network_access": false,
@@ -74,75 +74,100 @@
   "target_languages": [
     {
       "language_id": "NXL-S",
-      "candidate_role": "surface_symbol_literal",
+      "candidate_role": "semantic_label_claim",
       "grammar_state": "NOT_MOUNTED",
       "semantic_state": "NOT_CONFIGURED",
       "compiler_state": "NOT_CONFIGURED",
-      "status": "PROPOSAL"
+      "status": "PROPOSAL",
+      "design_note": "Localized label/meaning claims; preserve source and locale, do not treat as truth without evidence.",
+      "source_ref": "https://github.com/fisallllll280-code/NEXENT/blob/f62cf5920174551f9a8f88deb420f9515bedc284/nexent/languages.py"
     },
     {
       "language_id": "NXL-SYS",
-      "candidate_role": "system_symbol_identity_and_registry",
+      "candidate_role": "system_symbol_declarations",
       "grammar_state": "NOT_MOUNTED",
       "semantic_state": "NOT_CONFIGURED",
       "compiler_state": "NOT_CONFIGURED",
-      "status": "PROPOSAL"
+      "status": "PROPOSAL",
+      "design_note": "Versioned symbol registry declarations; identity is the code-point sequence.",
+      "source_ref": "https://github.com/fisallllll280-code/NEXENT/blob/f62cf5920174551f9a8f88deb420f9515bedc284/nexent/languages.py"
     },
     {
       "language_id": "NXL-ARCH",
-      "candidate_role": "stage_and_component_boundaries",
+      "candidate_role": "symbol_pipeline_architecture",
       "grammar_state": "NOT_MOUNTED",
       "semantic_state": "NOT_CONFIGURED",
       "compiler_state": "NOT_CONFIGURED",
-      "status": "PROPOSAL"
+      "status": "PROPOSAL",
+      "design_note": "Source, parser, IR, office, renderer and evidence boundaries.",
+      "source_ref": "https://github.com/fisallllll280-code/NEXENT/blob/f62cf5920174551f9a8f88deb420f9515bedc284/nexent/languages.py"
     },
     {
       "language_id": "NXL-CON",
-      "candidate_role": "input_and_policy_contracts",
+      "candidate_role": "symbol_import_contracts",
       "grammar_state": "NOT_MOUNTED",
       "semantic_state": "NOT_CONFIGURED",
       "compiler_state": "NOT_CONFIGURED",
-      "status": "PROPOSAL"
+      "status": "PROPOSAL",
+      "design_note": "Preconditions, postconditions and invariants for pinned offline import.",
+      "source_ref": "https://github.com/fisallllll280-code/NEXENT/blob/f62cf5920174551f9a8f88deb420f9515bedc284/nexent/languages.py"
     },
     {
       "language_id": "NXL-PROOF",
-      "candidate_role": "provenance_and_conformance_claims",
+      "candidate_role": "symbol_provenance_evidence",
       "grammar_state": "NOT_MOUNTED",
       "semantic_state": "NOT_CONFIGURED",
       "compiler_state": "NOT_CONFIGURED",
-      "status": "PROPOSAL"
+      "status": "PROPOSAL",
+      "design_note": "Source hash, dataset membership, parser fingerprint and bounded claims.",
+      "source_ref": "https://github.com/fisallllll280-code/NEXENT/blob/f62cf5920174551f9a8f88deb420f9515bedc284/nexent/languages.py"
     },
     {
       "language_id": "NXL-EXEC",
-      "candidate_role": "runtime_lookup_contract",
+      "candidate_role": "authorized_symbol_runtime_contract",
       "grammar_state": "NOT_MOUNTED",
       "semantic_state": "NOT_CONFIGURED",
       "compiler_state": "NOT_CONFIGURED",
-      "status": "PROPOSAL"
+      "status": "PROPOSAL",
+      "design_note": "Read-only lookup only; a glyph never authorizes execution.",
+      "source_ref": "https://github.com/fisallllll280-code/NEXENT/blob/f62cf5920174551f9a8f88deb420f9515bedc284/nexent/languages.py"
     },
     {
       "language_id": "NXL-EVO",
-      "candidate_role": "append_only_version_diff",
+      "candidate_role": "symbol_version_evolution",
       "grammar_state": "NOT_MOUNTED",
       "semantic_state": "NOT_CONFIGURED",
       "compiler_state": "NOT_CONFIGURED",
-      "status": "PROPOSAL"
+      "status": "PROPOSAL",
+      "design_note": "Append-only Unicode release diffs, deprecations and lineage.",
+      "source_ref": "https://github.com/fisallllll280-code/NEXENT/blob/f62cf5920174551f9a8f88deb420f9515bedc284/nexent/languages.py"
     },
     {
       "language_id": "NXL-Q",
-      "candidate_role": "typed_symbol_search_request",
+      "candidate_role": "typed_registry_queries",
       "grammar_state": "NOT_MOUNTED",
       "semantic_state": "NOT_CONFIGURED",
       "compiler_state": "NOT_CONFIGURED",
-      "status": "PROPOSAL"
+      "status": "PROPOSAL",
+      "design_note": "Search by code-point identity, qualification, locale and release.",
+      "source_ref": "https://github.com/fisallllll280-code/NEXENT/blob/f62cf5920174551f9a8f88deb420f9515bedc284/nexent/languages.py"
     },
     {
       "language_id": "NXL-VIS",
-      "candidate_role": "rendering_and_fallback_contract",
+      "candidate_role": "derived_symbol_rendering",
       "grammar_state": "NOT_MOUNTED",
       "semantic_state": "NOT_CONFIGURED",
       "compiler_state": "NOT_CONFIGURED",
-      "status": "PROPOSAL"
+      "status": "PROPOSAL",
+      "design_note": "Model-derived display declarations, accessibility labels and platform fallback.",
+      "source_ref": "https://github.com/fisallllll280-code/NEXENT/blob/f62cf5920174551f9a8f88deb420f9515bedc284/nexent/languages.py"
     }
-  ]
+  ],
+  "nxl_source": {
+    "repository": "fisallllll280-code/NEXENT",
+    "commit": "f62cf5920174551f9a8f88deb420f9515bedc284",
+    "file": "nexent/languages.py",
+    "master_engineering_file": "docs/NEXENT_MASTER_ENGINEERING_WORK.md",
+    "status": "ALL_NINE_PROPOSED_GRAMMAR_AND_SEMANTICS_NOT_FORMALIZED"
+  }
 }
