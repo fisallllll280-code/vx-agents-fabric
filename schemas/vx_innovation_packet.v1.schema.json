@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vaixlns.example/schemas/vx-innovation-packet.v1.schema.json",
+  "title": "VX Innovation Packet v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "status",
+    "packet_id",
+    "replay_id",
+    "goal_sha256",
+    "index_refs",
+    "tool_routes",
+    "stages",
+    "blockers",
+    "execution_state",
+    "external_spend_sar",
+    "canonical_mutation_allowed",
+    "evidence_state"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "artifact_type": {
+      "const": "VX_INNOVATION_PACKET"
+    },
+    "status": {
+      "enum": [
+        "PROPOSAL",
+        "HOLD_INVALID_GOAL",
+        "HOLD_INVALID_CONSTRAINTS",
+        "HOLD_INVALID_INDEX_IDS",
+        "HOLD_INVALID_SOURCE_REFS",
+        "HOLD_INVALID_LANGUAGES"
+      ]
+    },
+    "packet_id": {
+      "type": "string",
+      "pattern": "^VX-INNOV-[A-F0-9]{20}$"
+    },
+    "replay_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 12000
+    },
+    "goal_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "constraints": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "maxLength": 2000
+      }
+    },
+    "domain": {
+      "type": "string"
+    },
+    "requested_languages": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "string",
+        "maxLength": 80
+      }
+    },
+    "index_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "index_id",
+          "source",
+          "state",
+          "snapshot"
+        ]
+      }
+    },
+    "caller_source_refs": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "string",
+        "maxLength": 2000
+      }
+    },
+    "tool_routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "tool_id",
+          "mode",
+          "default"
+        ]
+      }
+    },
+    "stages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "purpose",
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "const": "NOT_RUN"
+          }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code"
+        ]
+      }
+    },
+    "execution_state": {
+      "const": "PLANNING_ONLY"
+    },
+    "external_spend_sar": {
+      "const": 0
+    },
+    "source_mutation_allowed": {
+      "const": false
+    },
+    "canonical_mutation_allowed": {
+      "const": false
+    },
+    "code_execution_performed": {
+      "const": false
+    },
+    "evidence_state": {
+      "const": "NOT_VERIFIED"
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}
