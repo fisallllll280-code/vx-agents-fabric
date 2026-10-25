@@ -135,6 +135,20 @@
       ],
       "default_scope": "proposal",
       "purpose": "Route opt-in, approved WhatsApp Business communications through a verified server adapter; validate webhooks, preserve conversation lineage and require evidence for delivery state."
+    },
+    {
+      "office_id": "Ω.SYMBOL",
+      "name": "Symbol and Language Engineering Office",
+      "role_ids": [
+        "VX-ENG-LANG",
+        "VX-ENG-ARCH",
+        "VX-ENG-INNOV",
+        "VX-ENG-TEST",
+        "VX-ENG-PROOF",
+        "MIND-PROOF"
+      ],
+      "default_scope": "read-only-proposal",
+      "purpose": "Version-pinned Unicode sequence inventory, symbol identity, NXL adapter design, reproducibility, and platform rendering contracts."
     }
   ],
   "phase_routes": [
@@ -549,6 +563,41 @@
         "writing-plans",
         "verification-before-completion"
       ]
+    },
+    {
+      "phase": "OMEGA_SYMBOL_IMPORT",
+      "skills": [
+        "writing-plans",
+        "executing-plans",
+        "verification-before-completion"
+      ],
+      "role_ids": [
+        "VX-RES-LITERATURE",
+        "VX-ENG-LANG",
+        "VX-ENG-ARCH",
+        "VX-ENG-INNOV",
+        "VX-ENG-TEST",
+        "VX-ENG-PROOF",
+        "MIND-PROOF"
+      ],
+      "required_artifacts": [
+        "unicode_version",
+        "normative_source_uri",
+        "local_source_sha256",
+        "parser_fingerprint",
+        "symbol_ir",
+        "nxl_language_versions",
+        "grammar_and_semantics_state",
+        "rendering_target_matrix",
+        "arc_x_evidence"
+      ],
+      "gate": "PINNED_OFFLINE_DATA_AND_RECOVERED_NXL_GRAMMARS_REQUIRED",
+      "write_scope": "proposal",
+      "on_missing_data": "HOLD_DATA_NOT_MOUNTED",
+      "on_unknown_sequence": "HOLD_UNKNOWN_SEQUENCE",
+      "canonical_admission_requires_approval": true,
+      "execution_allowed": false,
+      "source_deletion_allowed": false
     }
   ],
   "learning": {
