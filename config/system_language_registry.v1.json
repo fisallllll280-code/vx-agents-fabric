@@ -32,7 +32,10 @@
       "semantic_adapter": null,
       "compiler_adapter": null,
       "required_root_keys": [],
-      "capabilities": ["identity_resolution", "canonical_provenance"],
+      "capabilities": [
+        "identity_resolution",
+        "canonical_provenance"
+      ],
       "allowed_targets": [],
       "notes": "Golden Source identity is recorded as a reference only; its actual bytes and grammar are not available to this adapter."
     },
@@ -47,9 +50,18 @@
       "parser_adapter": "builtin.json.v1",
       "semantic_adapter": null,
       "compiler_adapter": null,
-      "required_root_keys": ["intent_id", "goal"],
-      "capabilities": ["syntax_parse", "structural_check", "source_hash"],
-      "allowed_targets": ["vx.agent-contract-python"],
+      "required_root_keys": [
+        "intent_id",
+        "goal"
+      ],
+      "capabilities": [
+        "syntax_parse",
+        "structural_check",
+        "source_hash"
+      ],
+      "allowed_targets": [
+        "vx.agent-contract-python"
+      ],
       "notes": "The required fields are a candidate contract, not an assertion about an already-adopted VX grammar."
     },
     {
@@ -64,8 +76,14 @@
       "semantic_adapter": null,
       "compiler_adapter": null,
       "required_root_keys": [],
-      "capabilities": ["syntax_parse", "static_structure_summary", "source_hash"],
-      "allowed_targets": ["vx.intent-json"],
+      "capabilities": [
+        "syntax_parse",
+        "static_structure_summary",
+        "source_hash"
+      ],
+      "allowed_targets": [
+        "vx.intent-json"
+      ],
       "notes": "Python is parsed into an AST only. No imports, calls, file effects or code execution occur."
     },
     {
@@ -79,8 +97,21 @@
       "parser_adapter": "builtin.json.v1",
       "semantic_adapter": null,
       "compiler_adapter": null,
-      "required_root_keys": ["schema_version", "provider_id", "integration_type", "observed_at", "expires_at", "probe_result", "capabilities", "evidence"],
-      "capabilities": ["syntax_parse", "structural_check", "source_hash"],
+      "required_root_keys": [
+        "schema_version",
+        "provider_id",
+        "integration_type",
+        "observed_at",
+        "expires_at",
+        "probe_result",
+        "capabilities",
+        "evidence"
+      ],
+      "capabilities": [
+        "syntax_parse",
+        "structural_check",
+        "source_hash"
+      ],
       "allowed_targets": [],
       "notes": "JSON shape checks do not verify HMACs, timestamps, provider reachability, or the honesty of a trusted host probe."
     },
@@ -96,7 +127,11 @@
       "semantic_adapter": null,
       "compiler_adapter": null,
       "required_root_keys": [],
-      "capabilities": ["safe_syntax_parse", "operator_allowlist", "source_hash"],
+      "capabilities": [
+        "safe_syntax_parse",
+        "operator_allowlist",
+        "source_hash"
+      ],
       "allowed_targets": [],
       "notes": "Only a bounded math-expression syntax is recognized. This adapter does not calculate results or replace the existing engineering tool implementation."
     },
@@ -112,8 +147,14 @@
       "semantic_adapter": null,
       "compiler_adapter": null,
       "required_root_keys": [],
-      "capabilities": ["protocol_description", "stage_contracts", "provenance"],
-      "allowed_targets": ["vx.intent-json"],
+      "capabilities": [
+        "protocol_description",
+        "stage_contracts",
+        "provenance"
+      ],
+      "allowed_targets": [
+        "vx.intent-json"
+      ],
       "notes": "A protocol description is not executable semantics; a Markdown parser and formal protocol schema remain unconfigured."
     },
     {
@@ -128,9 +169,174 @@
       "semantic_adapter": null,
       "compiler_adapter": null,
       "required_root_keys": [],
-      "capabilities": ["schema_declaration", "contract_validation"],
+      "capabilities": [
+        "schema_declaration",
+        "contract_validation"
+      ],
       "allowed_targets": [],
       "notes": "A YAML parser/schema validator is intentionally not implied by this registry. Add a pinned, reviewed adapter before parsing YAML."
+    },
+    {
+      "language_id": "NXL-S",
+      "version": "1.0.0",
+      "display_name": "NXL Symbol Surface",
+      "grammar": "unresolved",
+      "source_status": "PROPOSAL",
+      "canonical_ref": "docs/integration/OMEGA_SYMBOL_FABRIC_V1.md#NXL-S",
+      "reference_state": "REPOSITORY_PROPOSAL",
+      "parser_adapter": null,
+      "semantic_adapter": null,
+      "compiler_adapter": null,
+      "required_root_keys": [],
+      "capabilities": [
+        "candidate_symbol_crosswalk"
+      ],
+      "allowed_targets": [],
+      "notes": "Recovered language identity only. The original grammar, semantics, and compiler are not mounted; symbol translation must return HOLD."
+    },
+    {
+      "language_id": "NXL-SYS",
+      "version": "1.0.0",
+      "display_name": "NXL System Contract",
+      "grammar": "unresolved",
+      "source_status": "PROPOSAL",
+      "canonical_ref": "docs/integration/OMEGA_SYMBOL_FABRIC_V1.md#NXL-SYS",
+      "reference_state": "REPOSITORY_PROPOSAL",
+      "parser_adapter": null,
+      "semantic_adapter": null,
+      "compiler_adapter": null,
+      "required_root_keys": [],
+      "capabilities": [
+        "candidate_symbol_crosswalk"
+      ],
+      "allowed_targets": [],
+      "notes": "Recovered language identity only. The original grammar, semantics, and compiler are not mounted; symbol translation must return HOLD."
+    },
+    {
+      "language_id": "NXL-ARCH",
+      "version": "1.0.0",
+      "display_name": "NXL Architecture",
+      "grammar": "unresolved",
+      "source_status": "PROPOSAL",
+      "canonical_ref": "docs/integration/OMEGA_SYMBOL_FABRIC_V1.md#NXL-ARCH",
+      "reference_state": "REPOSITORY_PROPOSAL",
+      "parser_adapter": null,
+      "semantic_adapter": null,
+      "compiler_adapter": null,
+      "required_root_keys": [],
+      "capabilities": [
+        "candidate_symbol_crosswalk"
+      ],
+      "allowed_targets": [],
+      "notes": "Recovered language identity only. The original grammar, semantics, and compiler are not mounted; symbol translation must return HOLD."
+    },
+    {
+      "language_id": "NXL-CON",
+      "version": "1.0.0",
+      "display_name": "NXL Constraints",
+      "grammar": "unresolved",
+      "source_status": "PROPOSAL",
+      "canonical_ref": "docs/integration/OMEGA_SYMBOL_FABRIC_V1.md#NXL-CON",
+      "reference_state": "REPOSITORY_PROPOSAL",
+      "parser_adapter": null,
+      "semantic_adapter": null,
+      "compiler_adapter": null,
+      "required_root_keys": [],
+      "capabilities": [
+        "candidate_symbol_crosswalk"
+      ],
+      "allowed_targets": [],
+      "notes": "Recovered language identity only. The original grammar, semantics, and compiler are not mounted; symbol translation must return HOLD."
+    },
+    {
+      "language_id": "NXL-PROOF",
+      "version": "1.0.0",
+      "display_name": "NXL Proof",
+      "grammar": "unresolved",
+      "source_status": "PROPOSAL",
+      "canonical_ref": "docs/integration/OMEGA_SYMBOL_FABRIC_V1.md#NXL-PROOF",
+      "reference_state": "REPOSITORY_PROPOSAL",
+      "parser_adapter": null,
+      "semantic_adapter": null,
+      "compiler_adapter": null,
+      "required_root_keys": [],
+      "capabilities": [
+        "candidate_symbol_crosswalk"
+      ],
+      "allowed_targets": [],
+      "notes": "Recovered language identity only. The original grammar, semantics, and compiler are not mounted; symbol translation must return HOLD."
+    },
+    {
+      "language_id": "NXL-EXEC",
+      "version": "1.0.0",
+      "display_name": "NXL Execution Contract",
+      "grammar": "unresolved",
+      "source_status": "PROPOSAL",
+      "canonical_ref": "docs/integration/OMEGA_SYMBOL_FABRIC_V1.md#NXL-EXEC",
+      "reference_state": "REPOSITORY_PROPOSAL",
+      "parser_adapter": null,
+      "semantic_adapter": null,
+      "compiler_adapter": null,
+      "required_root_keys": [],
+      "capabilities": [
+        "candidate_symbol_crosswalk"
+      ],
+      "allowed_targets": [],
+      "notes": "Recovered language identity only. The original grammar, semantics, and compiler are not mounted; symbol translation must return HOLD."
+    },
+    {
+      "language_id": "NXL-EVO",
+      "version": "1.0.0",
+      "display_name": "NXL Evolution",
+      "grammar": "unresolved",
+      "source_status": "PROPOSAL",
+      "canonical_ref": "docs/integration/OMEGA_SYMBOL_FABRIC_V1.md#NXL-EVO",
+      "reference_state": "REPOSITORY_PROPOSAL",
+      "parser_adapter": null,
+      "semantic_adapter": null,
+      "compiler_adapter": null,
+      "required_root_keys": [],
+      "capabilities": [
+        "candidate_symbol_crosswalk"
+      ],
+      "allowed_targets": [],
+      "notes": "Recovered language identity only. The original grammar, semantics, and compiler are not mounted; symbol translation must return HOLD."
+    },
+    {
+      "language_id": "NXL-Q",
+      "version": "1.0.0",
+      "display_name": "NXL Query",
+      "grammar": "unresolved",
+      "source_status": "PROPOSAL",
+      "canonical_ref": "docs/integration/OMEGA_SYMBOL_FABRIC_V1.md#NXL-Q",
+      "reference_state": "REPOSITORY_PROPOSAL",
+      "parser_adapter": null,
+      "semantic_adapter": null,
+      "compiler_adapter": null,
+      "required_root_keys": [],
+      "capabilities": [
+        "candidate_symbol_crosswalk"
+      ],
+      "allowed_targets": [],
+      "notes": "Recovered language identity only. The original grammar, semantics, and compiler are not mounted; symbol translation must return HOLD."
+    },
+    {
+      "language_id": "NXL-VIS",
+      "version": "1.0.0",
+      "display_name": "NXL Visual Contract",
+      "grammar": "unresolved",
+      "source_status": "PROPOSAL",
+      "canonical_ref": "docs/integration/OMEGA_SYMBOL_FABRIC_V1.md#NXL-VIS",
+      "reference_state": "REPOSITORY_PROPOSAL",
+      "parser_adapter": null,
+      "semantic_adapter": null,
+      "compiler_adapter": null,
+      "required_root_keys": [],
+      "capabilities": [
+        "candidate_symbol_crosswalk"
+      ],
+      "allowed_targets": [],
+      "notes": "Recovered language identity only. The original grammar, semantics, and compiler are not mounted; symbol translation must return HOLD."
     }
   ]
 }
