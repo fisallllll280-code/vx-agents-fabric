@@ -58,3 +58,7 @@ Example context:
 ```
 
 The packet does not claim novelty, feasibility, implementation, validation or canonical admission. No external spend or canonical mutation is permitted by this local path.
+
+## Repository integrity source audit
+
+See [Claude Repository Integrity Changes — Source Audit v1](../research/CLAUDE_REPOSITORY_INTEGRITY_AUDIT_V1.md) for commit-level diff and test review. Existing VAIXLNS zero-loss indexing already captures content hashes, source revisions and symlink-target text. The candidate gap is nested repository boundary detection; the audit records the proposed work as PROPOSED and does not represent it as adopted or verified.
