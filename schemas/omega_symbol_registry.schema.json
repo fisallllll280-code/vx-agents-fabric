@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "VAIXLNS.OMEGA_SYMBOL_REGISTRY.SCHEMA.V1",
+  "title": "VAIXLNS Omega Symbol Registry Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "status",
+    "canonical_authority",
+    "orchestrator",
+    "assurance_gate",
+    "unicode",
+    "policy",
+    "input_contract",
+    "output_contract",
+    "offices",
+    "target_languages"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "artifact_id": { "const": "VAIXLNS.OMEGA_SYMBOL_FABRIC.V1" },
+    "status": { "enum": ["PROPOSAL", "SPECIFIED", "IMPLEMENTED", "VERIFIED"] },
+    "canonical_authority": { "const": "VAIXLNS" },
+    "orchestrator": { "const": "VX" },
+    "assurance_gate": { "const": "ARC-X" },
+    "unicode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["standard", "emoji_version", "source_policy", "chart_reference", "normative_test_file", "expected_sha256", "runtime_network_access", "source_file_must_be_supplied_locally"],
+      "properties": {
+        "standard": { "const": "UTS #51" },
+        "emoji_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+        "source_policy": { "const": "PINNED_VERSIONED_DATA_ONLY" },
+        "chart_reference": { "type": "string", "format": "uri" },
+        "normative_data_directory": { "type": "string", "format": "uri" },
+        "normative_test_file": { "type": "string", "format": "uri" },
+        "expected_sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "version_observed_on": { "type": "string", "format": "date" },
+        "runtime_network_access": { "const": false },
+        "source_file_must_be_supplied_locally": { "const": true }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "required": ["default_mode", "unknown_sequence_action", "version_mismatch_action", "missing_data_action", "semantic_label_is_authority", "rendering_is_evidence_of_support", "network_access", "canonical_mutation", "source_deletion"],
+      "properties": {
+        "default_mode": { "const": "READ_ONLY" },
+        "unknown_sequence_action": { "const": "HOLD_UNKNOWN_SEQUENCE" },
+        "version_mismatch_action": { "const": "HOLD_VERSION_MISMATCH" },
+        "missing_data_action": { "const": "HOLD_DATA_NOT_MOUNTED" },
+        "semantic_label_is_authority": { "const": false },
+        "rendering_is_evidence_of_support": { "const": false },
+        "network_access": { "const": false },
+        "canonical_mutation": { "const": false },
+        "source_deletion": { "const": false }
+      }
+    },
+    "input_contract": { "type": "object" },
+    "output_contract": { "type": "object" },
+    "offices": { "type": "array", "minItems": 1 },
+    "target_languages": {
+      "type": "array",
+      "minItems": 9,
+      "items": {
+        "type": "object",
+        "required": ["language_id", "candidate_role", "grammar_state", "semantic_state", "compiler_state", "status"],
+        "properties": {
+          "language_id": { "enum": ["NXL-S", "NXL-SYS", "NXL-ARCH", "NXL-CON", "NXL-PROOF", "NXL-EXEC", "NXL-EVO", "NXL-Q", "NXL-VIS"] },
+          "grammar_state": { "const": "NOT_MOUNTED" },
+          "semantic_state": { "const": "NOT_CONFIGURED" },
+          "compiler_state": { "const": "NOT_CONFIGURED" },
+          "status": { "const": "PROPOSAL" }
+        }
+      }
+    }
+  }
+}
