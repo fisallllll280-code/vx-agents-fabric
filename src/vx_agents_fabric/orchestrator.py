@@ -148,6 +148,13 @@ class EngineeringOrchestrator:
                         symbol_request = engineering_context.get("omega_symbol_request")
                 if not isinstance(language_request, Mapping) and not isinstance(symbol_request, Mapping):
                     continue
+            if stage == "INNOVATION":
+                innovation_request = context_payload.get("innovation_request")
+                engineering_context = context_payload.get("engineering")
+                if isinstance(engineering_context, Mapping) and not isinstance(innovation_request, Mapping):
+                    innovation_request = engineering_context.get("innovation_request")
+                if not isinstance(innovation_request, Mapping):
+                    continue
             for role_id in role_ids:
                 spec = self.registry.resolve(role_id, self.version_pins.get(role_id))
                 task_id = f"{workflow_id}:{stage}:{spec.key}"
