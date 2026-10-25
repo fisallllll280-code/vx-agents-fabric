@@ -56,8 +56,9 @@ def build_innovation_packet(request: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(goal, str) or not goal.strip() or len(goal.encode("utf-8")) > 12000:
         return {"schema_version": SCHEMA_VERSION, "status": "HOLD_INVALID_GOAL", "error_code": "goal_required_or_too_large"}
     constraints = request.get("constraints", [])
-    if not isinstance(constraints, list) or any(not isinstance(item, str) for item in constraints):
-        return {"schema_version": SCHEMA_VERSION, "status": "HOLD_INVALID_CONSTRAINTS", "error_code": "constraints_must_be_string_list"}
+    if (not isinstance(constraints, list) or len(constraints) > 64
+            or any(not isinstance(item, str) or len(item.encode("utf-8")) > 2000 for item in constraints)):
+        return {"schema_version": SCHEMA_VERSION, "status": "HOLD_INVALID_CONSTRAINTS", "error_code": "constraints_must_be_bounded_string_list"}
     requested_indices = request.get("index_ids", [])
     if not isinstance(requested_indices, list) or any(not isinstance(item, str) for item in requested_indices):
         return {"schema_version": SCHEMA_VERSION, "status": "HOLD_INVALID_INDEX_IDS", "error_code": "index_ids_must_be_string_list"}
@@ -65,8 +66,13 @@ def build_innovation_packet(request: Mapping[str, Any]) -> dict[str, Any]:
     unknown = sorted(set(requested_indices) - available)
     selected = [item for item in INDEX_REFS if not requested_indices or item["index_id"] in requested_indices]
     source_refs = request.get("source_refs", [])
-    if not isinstance(source_refs, list) or any(not isinstance(item, str) for item in source_refs):
-        return {"schema_version": SCHEMA_VERSION, "status": "HOLD_INVALID_SOURCE_REFS", "error_code": "source_refs_must_be_string_list"}
+    if (not isinstance(source_refs, list) or len(source_refs) > 128
+            or any(not isinstance(item, str) or len(item) > 2000 for item in source_refs)):
+        return {"schema_version": SCHEMA_VERSION, "status": "HOLD_INVALID_SOURCE_REFS", "error_code": "source_refs_must_be_bounded_string_list"}
+    requested_languages = request.get("requested_languages", [])
+    if (not isinstance(requested_languages, list) or len(requested_languages) > 32
+            or any(not isinstance(item, str) or len(item) > 80 for item in requested_languages)):
+        return {"schema_version": SCHEMA_VERSION, "status": "HOLD_INVALID_LANGUAGES", "error_code": "requested_languages_must_be_bounded_string_list"}
 
     blockers = []
     if unknown:
@@ -85,7 +91,7 @@ def build_innovation_packet(request: Mapping[str, Any]) -> dict[str, Any]:
         "goal_sha256": hashlib.sha256(goal.strip().encode("utf-8")).hexdigest(),
         "constraints": constraints,
         "domain": request.get("domain") if isinstance(request.get("domain"), str) else "unspecified",
-        "requested_languages": request.get("requested_languages", []),
+        "requested_languages": requested_languages,
         "index_refs": selected,
         "caller_source_refs": sorted(set(source_refs)),
         "unresolved_index_ids": unknown,
