@@ -12,6 +12,7 @@ import tempfile
 from typing import Any, Mapping, Sequence
 
 from .orchestrator import EngineeringOrchestrator
+from .language_orchestrator_adapter import build_orchestrator_adapter
 from .providers import build_from_env
 from .registry import AgentRegistry, default_registry
 
@@ -48,6 +49,7 @@ def report_payload(report: Any, orchestrator: EngineeringOrchestrator,
         "provider_bindings": {
             "endpoint_configured": provider_bindings.enabled,
             "configured_agent_versions": sorted(provider_bindings.agent_adapters),
+            "local_control_adapters": ["VX-ENG-LANG@1.0.0"],
             "unconfigured_agent_versions": list(provider_bindings.unconfigured_agent_versions),
             "configured_parent_minds": sorted(provider_bindings.mind_adapters),
             "unconfigured_parent_minds": list(provider_bindings.unconfigured_minds),
@@ -137,13 +139,32 @@ def main(argv: Sequence[str] | None = None) -> int:
         context = _read_context(args.context_file)
         registry = default_registry()
         bindings = build_from_env(registry)
+        local_adapters = dict(bindings.agent_adapters)
+        language_spec = registry.resolve("VX-ENG-LANG")
+        repo_root = Path(__file__).resolve().parents[2]
+        language_config = Path(os.environ.get(
+            "VX_SYSTEM_LANGUAGE_REGISTRY_PATH",
+            str(repo_root / "config" / "system_language_registry.v1.json"),
+        ))
+        symbol_profile = Path(os.environ.get(
+            "VX_OMEGA_SYMBOL_PROFILE_PATH",
+            str(repo_root / "config" / "omega_symbol_fabric.v1.json"),
+        ))
+        symbol_data = os.environ.get("VX_OMEGA_SYMBOL_DATA_PATH") or None
+        # VX always binds the deterministic local control adapter for language requests.
+        # It does not depend on a model provider and never executes submitted source.
+        local_adapters[language_spec.key] = build_orchestrator_adapter(
+            language_config,
+            symbol_profile_path=symbol_profile,
+            symbol_data_path=symbol_data,
+        )
         pins = version_pins_from_env(registry)
         workflow_id = args.workflow_id or "WF-" + __import__("hashlib").sha256(
             (goal + "\0" + str(context)).encode("utf-8")
         ).hexdigest()[:16].upper()
         orchestrator = EngineeringOrchestrator(
             registry=registry,
-            adapters=bindings.agent_adapters,
+            adapters=local_adapters,
             mind_adapters=bindings.mind_adapters,
             version_pins=pins,
         )
