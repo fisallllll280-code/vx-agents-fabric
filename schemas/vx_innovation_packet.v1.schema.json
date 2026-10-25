@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vaixlns.example/schemas/vx-innovation-packet.v1.schema.json",
+  "$id": "urn:vaixlns:schema:vx-innovation-packet:1.0.0",
   "title": "VX Innovation Packet v1",
   "type": "object",
   "required": [
