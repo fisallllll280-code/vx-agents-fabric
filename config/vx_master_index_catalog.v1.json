@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0.0",
+  "catalog_id": "VX.INDEX.MASTER_CATALOG.V1",
+  "status": "PROPOSED",
+  "as_of": "2026-10-25",
+  "canonical_mutation_allowed": false,
+  "source_snapshots": [
+    {"system":"VAIXLNS","commit":"433969a43b604563e22b70b8cb88223aff539fad","index":"registry/innovation-operation-index.v1.json","state":"RECOVERED_WITH_REVIEW_DEBT","records":177,"review_required":174},
+    {"system":"VAIXLNS","commit":"433969a43b604563e22b70b8cb88223aff539fad","index":"registry/omega/omega-000-master-index.json","state":"PROTECTED_READ_ONLY","records":null,"completeness":"NOT_REVALIDATED"},
+    {"system":"VAIXLNS","commit":"433969a43b604563e22b70b8cb88223aff539fad","index":"docs/indexes/README.md","state":"HISTORICAL_COVERAGE_INCOMPLETE","approximate_index_span":"0001-2750","index_families":"40+"},
+    {"system":"NEXENT","commit":"f62cf5920174551f9a8f88deb420f9515bedc284","index":"docs/MASTER_FEDERATED_INDEX.md","state":"SOURCE_PINNED"},
+    {"system":"NEXENT","commit":"f62cf5920174551f9a8f88deb420f9515bedc284","index":"docs/NEXENT_CANONICAL_INNOVATION_INDEX_V1.md","state":"SOURCE_PINNED"},
+    {"system":"NEXENT","commit":"f62cf5920174551f9a8f88deb420f9515bedc284","index":"docs/NEXENT_COMPLETE_SYSTEM_AND_INNOVATION_INVENTORY.md","state":"SOURCE_PINNED"},
+    {"system":"NEXENT","commit":"f62cf5920174551f9a8f88deb420f9515bedc284","index":"nexent/languages.py","state":"NXL_PROPOSED_GRAMMAR_SEMANTICS_HOLD","language_count":9},
+    {"system":"VX","commit":"VX_PULL_REQUEST_HEAD","index":"docs/indexes/OMEGA_SYMBOL_INDEX_V1.md","state":"PROPOSED"},
+    {"system":"VX","commit":"THIS_CHANGE","index":"docs/indexes/VX_MASTER_INDEX_CATALOG_V1.md","state":"PROPOSED"}
+  ],
+  "tool_catalog": [
+    {"tool_id":"math.evaluate","availability":"LOCAL_BOUNDED"},
+    {"tool_id":"math.solve_linear_system","availability":"LOCAL_BOUNDED"},
+    {"tool_id":"engineering.convert_units","availability":"LOCAL_BOUNDED"},
+    {"tool_id":"github.fetch_file","availability":"READ_ONLY_ADAPTER"},
+    {"tool_id":"sandbox.execute_python","availability":"NOT_CONFIGURED_BY_DEFAULT"},
+    {"tool_id":"engineering.solver.submit","availability":"NOT_CONFIGURED_BY_DEFAULT_APPROVAL_GATED"}
+  ],
+  "limitations": [
+    "The catalog covers inspected snapshots, not every historical row or every private/unmounted index.",
+    "Omega.000 record count was not revalidated and its source remains untouched.",
+    "NXL language names do not establish grammar, semantics, compiler, or translation support."
+  ]
+}
