@@ -96,3 +96,7 @@ The governed workflow now has a proposed additive lane for source-backed reposit
 - Source/endpoint limits: `docs/server_repository_inventory_v1.md`
 
 This remains a reviewable, non-production surface. Private endpoints are not probed merely because they appear in an archive; external providers, sandbox/solver gateways and canonical durable-ledger bindings require separate configuration and admission.
+
+## Source-linked simulation and automation planning
+
+See [MiroFish ideas and Zapier handoffs under VX](docs/mirofish_zapier_integration.md). The two additive tools compile local plans only; external simulations and Zapier actions remain NOT_CONFIGURED. Specialized roles are DESIGN_ONLY until separately admitted.

@@ -1,0 +1,131 @@
+{
+  "fixture": "SYNTHETIC; digest is illustrative, not an inspected real-world source",
+  "scenario_plan": {
+    "schema_version": "1.0.0",
+    "status": "PLANNED",
+    "scenario_id": "booking-review",
+    "plan_sha256": "fb2b7e4cf84db5d49602439b217e6ee112e9660189bfc7c43eb63aee33d993d7",
+    "experiment": {
+      "scenario_id": "booking-review",
+      "question": "Compare a simpler service booking journey with the current journey.",
+      "sources": [
+        {
+          "source_id": "user-brief",
+          "root_id": "brief-001",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "actors": [
+        {
+          "actor_id": "citizen",
+          "role": "Synthetic service user",
+          "source_ids": [
+            "user-brief"
+          ]
+        },
+        {
+          "actor_id": "operator",
+          "role": "Synthetic service operator",
+          "source_ids": [
+            "user-brief"
+          ]
+        }
+      ],
+      "interventions": [
+        {
+          "intervention_id": "reduce-steps",
+          "description": "Plan fewer booking steps for comparison",
+          "source_ids": [
+            "user-brief"
+          ]
+        }
+      ],
+      "max_agents": 2,
+      "max_rounds": 5,
+      "seed": 7
+    },
+    "source_root_groups": {
+      "brief-001": [
+        "user-brief"
+      ]
+    },
+    "source_integrity": "DECLARED_DIGESTS_NOT_CHECKED",
+    "source_independence": "NOT_VERIFIED",
+    "variants": [
+      {
+        "variant_id": "baseline",
+        "intervention": null,
+        "state": "NOT_RUN"
+      },
+      {
+        "variant_id": "reduce-steps",
+        "intervention": {
+          "intervention_id": "reduce-steps",
+          "description": "Plan fewer booking steps for comparison",
+          "source_ids": [
+            "user-brief"
+          ]
+        },
+        "state": "NOT_RUN"
+      }
+    ],
+    "controls": {
+      "same_seed_per_variant": true,
+      "reset_memory_per_variant": true,
+      "model_revision": "REQUIRED_BEFORE_EXECUTION"
+    },
+    "report_obligations": [
+      "compare_baseline_and_each_intervention",
+      "preserve_source_roots",
+      "label_outputs_as_simulated",
+      "record_model_and_environment",
+      "independent_real_world_validation_required"
+    ],
+    "execution_performed": false,
+    "external_spend_sar": 0,
+    "simulation_status": "NOT_RUN",
+    "mirofish_connection": "NOT_CONFIGURED",
+    "independent_verification": "NOT_RUN",
+    "production_gate": "HOLD",
+    "evidence_refs": []
+  },
+  "zapier_handoff": {
+    "schema_version": "1.0.0",
+    "status": "PENDING_AUTHORIZATION",
+    "handoff_sha256": "e760a16e437711699dc6f122b77534fcaf64ac1ae6740777ccf942322b41ccf2",
+    "idempotency_key": "e760a16e437711699dc6f122b77534fcaf64ac1ae6740777ccf942322b41ccf2",
+    "intent": {
+      "workflow_id": "booking-review-001",
+      "simulation_plan_sha256": "fb2b7e4cf84db5d49602439b217e6ee112e9660189bfc7c43eb63aee33d993d7",
+      "target_app": "project-tracker",
+      "action_name": "create_review_task",
+      "artifact_refs": [
+        "artifact:booking-plan"
+      ]
+    },
+    "connection": "NOT_CONFIGURED",
+    "artifact_integrity": "NOT_CHECKED",
+    "action_catalog_validation": "NOT_PERFORMED",
+    "payload_transfer": "NONE",
+    "execution_performed": false,
+    "production_gate": "HOLD",
+    "required_gates": [
+      "authenticated_zapier_account",
+      "fixed_tool_allowlist",
+      "artifact_integrity_and_data_scope",
+      "independent_action_approval",
+      "task_quota_and_spend_authority",
+      "durable_idempotency",
+      "action_receipt_and_independent_verification"
+    ],
+    "prohibited_implicit_actions": [
+      "send_message",
+      "publish",
+      "payment",
+      "trade",
+      "deploy"
+    ],
+    "external_spend_sar": 0,
+    "evidence_refs": []
+  }
+}
