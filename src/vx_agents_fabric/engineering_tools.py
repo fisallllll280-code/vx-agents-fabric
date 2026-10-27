@@ -19,6 +19,8 @@ from typing import Any, Callable, Mapping
 
 from .tool_control import VXToolControlGate
 from .registry import AgentRegistry
+from .scenario_planning import compile_scenario_plan, ScenarioPlanError
+from .automation_planning import compile_zapier_handoff
 
 JSONMap = dict[str, Any]
 OpenUrl = Callable[..., Any]
@@ -458,6 +460,26 @@ def build_engineering_tool_hub(*, environ: Mapping[str, str] | None = None,
     hub.register(ToolSpec("engineering.solver.submit", "1.0.0", "Submit a job to a configured CAD/CAE/CFD solver gateway.",
                           ("sandbox", "sandbox-write"), allowed_families=("engineering", "governance"),
                           requires_explicit_approval=True, max_input_bytes=520_000), solver.submit)
+    def plan_scenarios(arguments):
+        try:
+            return compile_scenario_plan(arguments)
+        except ScenarioPlanError as exc:
+            raise ToolInputError(str(exc)) from exc
+    hub.register(ToolSpec("simulation.plan_scenarios", "1.0.0",
+                          "Compile offline source-linked scenario variants; no simulation execution.",
+                          ("planning", "analysis"), allowed_families=("engineering",),
+                          required_capabilities=("scenario_planning",), max_input_bytes=100_000),
+                 plan_scenarios)
+    def plan_zapier(arguments):
+        try:
+            return compile_zapier_handoff(arguments)
+        except ValueError as exc:
+            raise ToolInputError(str(exc)) from exc
+    hub.register(ToolSpec("automation.plan_zapier", "1.0.0",
+                          "Compile a Zapier action intent for review; no external action.",
+                          ("planning",), allowed_families=("engineering",),
+                          required_capabilities=("automation_planning",), max_input_bytes=20_000),
+                 plan_zapier)
     return hub
 
 @dataclass(frozen=True)
