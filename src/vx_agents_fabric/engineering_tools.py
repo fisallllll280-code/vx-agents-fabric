@@ -19,7 +19,8 @@ from typing import Any, Callable, Mapping
 
 from .tool_control import VXToolControlGate
 from .registry import AgentRegistry
-from .physics import (constant_acceleration, newton_second_law, kinetic_energy,\n                      gravitational_potential_energy, linear_momentum, projectile_range)
+from .physics import (constant_acceleration, newton_second_law, kinetic_energy,
+                      gravitational_potential_energy, linear_momentum, projectile_range)
 
 JSONMap = dict[str, Any]
 OpenUrl = Callable[..., Any]
