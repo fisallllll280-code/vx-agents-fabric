@@ -139,6 +139,11 @@ def default_registry() -> AgentRegistry:
         # VX Engineering Intelligence
         _spec("VX-ENG-COORD", "Engineering Workflow Coordinator", "engineering", ("engineering_orchestration", "task_graph"), ("goal",), ("engineering_plan",), "planning"),
         _spec("VX-ENG-REQ", "Requirements & Constraint Engineer", "engineering", ("requirements", "acceptance_criteria"), ("goal", "research"), ("requirements_spec",), "analysis"),
+        _spec("VX-ENG-PHYSICS", "Physics & Mathematical Modeling Engineer", "engineering",
+              ("physics_mechanics", "mathematical_modeling", "dimensional_analysis", "numerical_verification"),
+              ("physical_problem", "units", "boundary_conditions", "model_assumptions"),
+              ("physics_model", "calculation_report", "assumption_register", "validation_obligations"),
+              "analysis", evidence=("equation_set", "unit_contract", "reference_case", "uncertainty_notes")),
         _spec("VX-ENG-ARCH", "Systems Architecture Engineer", "engineering", ("architecture", "interface_contracts", "impact_analysis"), ("requirements_spec",), ("architecture_candidate",), "proposal"),
         _spec("VX-ENG-INNOV", "Innovation & Design-Space Agent", "engineering", ("innovation", "novelty_search", "alternatives"), ("research", "architecture_candidate"), ("innovation_candidates",), "proposal"),
         _spec("VX-ENG-BUILD", "Implementation Planner/Builder", "engineering", ("implementation", "code_generation", "patch_planning"), ("architecture_candidate", "contracts"), ("implementation_artifacts",), "sandbox-write"),
