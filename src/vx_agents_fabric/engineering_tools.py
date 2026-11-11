@@ -19,6 +19,7 @@ from typing import Any, Callable, Mapping
 
 from .tool_control import VXToolControlGate
 from .registry import AgentRegistry
+from .physics import (constant_acceleration, newton_second_law, kinetic_energy,\n                      gravitational_potential_energy, linear_momentum, projectile_range)
 
 JSONMap = dict[str, Any]
 OpenUrl = Callable[..., Any]
@@ -442,6 +443,26 @@ def build_engineering_tool_hub(*, environ: Mapping[str, str] | None = None,
                           ("analysis", "research", "verification"), required_capabilities=("unit_conversion",)),
                  lambda args: {"value": convert_units(args.get("value"), args.get("from_unit"), args.get("to_unit")),
                                "from_unit": args.get("from_unit"), "to_unit": args.get("to_unit")})
+    # Deterministic classical-mechanics models; results remain analysis evidence, not certification.
+    physics_tools = (
+        ("physics.constant_acceleration", "1-D constant-acceleration kinematics.", "kinematics",
+         lambda args: constant_acceleration(args.get("initial_velocity_m_s"), args.get("acceleration_m_s2"), args.get("time_s"))),
+        ("physics.newton_second_law", "Compute net force from F=m*a.", "newton_second_law",
+         lambda args: newton_second_law(args.get("mass_kg"), args.get("acceleration_m_s2"))),
+        ("physics.kinetic_energy", "Compute translational kinetic energy.", "kinetic_energy",
+         lambda args: kinetic_energy(args.get("mass_kg"), args.get("speed_m_s"))),
+        ("physics.gravitational_potential_energy", "Compute near-Earth gravitational potential energy.", "potential_energy",
+         lambda args: gravitational_potential_energy(args.get("mass_kg"), args.get("height_m"), args.get("gravitational_acceleration_m_s2", 9.80665))),
+        ("physics.linear_momentum", "Compute one-dimensional linear momentum.", "linear_momentum",
+         lambda args: linear_momentum(args.get("mass_kg"), args.get("velocity_m_s"))),
+        ("physics.projectile_range", "Compute ideal level-ground projectile range.", "projectile_motion",
+         lambda args: projectile_range(args.get("initial_speed_m_s"), args.get("launch_angle_rad"), args.get("gravitational_acceleration_m_s2", 9.80665))),
+    )
+    for tool_id, description, capability, handler in physics_tools:
+        hub.register(ToolSpec(tool_id, "1.0.0", description,
+                              ("analysis", "research", "verification"),
+                              required_capabilities=("physics_mechanics",)), handler)
+
     github = GitHubReadOnlyAdapter(token=env.get("VX_GITHUB_TOKEN", ""),
                                    api_base_url=env.get("VX_GITHUB_API_BASE_URL", "https://api.github.com"),
                                    open_url=open_url)
