@@ -14,6 +14,7 @@ from vx_agents_fabric.physics import (
     projectile_range,
 )
 from vx_agents_fabric.engineering_tools import build_engineering_tool_hub
+from vx_agents_fabric.registry import default_registry
 
 
 class MechanicsModelTests(unittest.TestCase):
@@ -77,6 +78,21 @@ class PhysicsToolIntegrationTests(unittest.TestCase):
         )
         self.assertEqual(result.status, "BLOCKED")
         self.assertEqual(result.error_code, "required_capability_missing")
+
+    def test_invalid_physics_input_returns_domain_error(self):
+        hub = build_engineering_tool_hub(environ={})
+        result = hub.invoke(
+            "physics.newton_second_law", {"mass_kg": 0, "acceleration_m_s2": 3},
+            caller_family="engineering", authority_scope="analysis",
+            caller_capabilities=("physics_mechanics",),
+        )
+        self.assertEqual(result.status, "FAILED")
+        self.assertEqual(result.error_code, "mass_kg_must_be_positive")
+
+    def test_specialist_role_declares_physics_capability(self):
+        role = default_registry().resolve("VX-ENG-PHYSICS")
+        self.assertIn("physics_mechanics", role.capabilities)
+        self.assertEqual(role.authority_scope, "analysis")
 
 
 if __name__ == "__main__":
