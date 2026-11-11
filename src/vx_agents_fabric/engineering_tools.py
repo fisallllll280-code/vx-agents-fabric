@@ -19,7 +19,7 @@ from typing import Any, Callable, Mapping
 
 from .tool_control import VXToolControlGate
 from .registry import AgentRegistry
-from .physics import (constant_acceleration, newton_second_law, kinetic_energy,
+from .physics import (PhysicsInputError, constant_acceleration, newton_second_law, kinetic_energy,
                       gravitational_potential_energy, linear_momentum, projectile_range)
 
 JSONMap = dict[str, Any]
@@ -423,7 +423,7 @@ class EngineeringToolHub:
             return ToolResult("COMPLETED", tool_id, output, evidence=evidence)
         except ToolNotConfigured as exc:
             return ToolResult("NOT_CONFIGURED", tool_id, error_code=str(exc))
-        except ToolInputError as exc:
+        except (ToolInputError, PhysicsInputError) as exc:
             return ToolResult("FAILED", tool_id, error_code=str(exc))
         except Exception as exc:
             return ToolResult("FAILED", tool_id, error_code="adapter_unhandled_error:" + type(exc).__name__)
