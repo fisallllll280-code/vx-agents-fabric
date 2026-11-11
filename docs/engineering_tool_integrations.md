@@ -61,3 +61,8 @@ This is an executable local reference gate, not yet the full canonical STCF runt
 ## Verification
 
 The tests use fake provider responses and no network credentials. CI's green result verifies adapter logic only; it does not prove a live GitHub, sandbox or solver service is connected.
+
+
+## Classical mechanics extension
+
+See [Domain Physics Verification v1](domain_physics_verification_v1.md). The governed tool hub now exposes six bounded SI mechanics tools (`physics.constant_acceleration`, `physics.newton_second_law`, `physics.kinetic_energy`, `physics.gravitational_potential_energy`, `physics.linear_momentum`, `physics.projectile_range`) and the registry adds `VX-ENG-PHYSICS`. The role is registered as an analysis specialist; registry presence does not imply provider binding or admission. The tools require the host-bound `physics_mechanics` capability and return normal input/output hash evidence. They do not replace experimental validation or qualified CAE/CFD solvers.
