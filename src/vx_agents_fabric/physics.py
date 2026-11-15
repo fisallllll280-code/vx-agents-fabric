@@ -12,7 +12,10 @@ class PhysicsInputError(ValueError):
 def _finite(name: str, value: Any) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise PhysicsInputError(name + "_must_be_numeric")
-    result = float(value)
+    try:
+        result = float(value)
+    except (OverflowError, ValueError) as exc:
+        raise PhysicsInputError(name + "_must_be_finite_and_bounded") from exc
     if not math.isfinite(result) or abs(result) > 1e100:
         raise PhysicsInputError(name + "_must_be_finite_and_bounded")
     return result
