@@ -43,6 +43,18 @@ class MechanicsModelTests(unittest.TestCase):
     def test_projectile_vertical_launch_has_zero_range(self):
         self.assertAlmostEqual(projectile_range(10, math.pi / 2)["horizontal_range_m"], 0.0)
 
+
+    def test_integer_too_large_for_float_is_rejected_as_domain_error(self):
+        huge_integer = 10 ** 1000
+        invalid_calls = (
+            lambda: newton_second_law(huge_integer, 1),
+            lambda: constant_acceleration(0, 1, huge_integer),
+            lambda: projectile_range(huge_integer, math.pi / 4),
+        )
+        for call in invalid_calls:
+            with self.subTest(call=call), self.assertRaises(PhysicsInputError):
+                call()
+
     def test_invalid_physical_domains_are_rejected(self):
         invalid_calls = (
             lambda: newton_second_law(0, 4),
